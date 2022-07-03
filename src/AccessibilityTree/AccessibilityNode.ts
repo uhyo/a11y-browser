@@ -9,7 +9,19 @@ export type AccessibilityNode = {
    */
   id: string;
   /**
+   * ID of parent node.
+   */
+  parentId: string | undefined;
+  /**
+   * ID of backend DOM node.
+   */
+  backendDOMNodeId: number | undefined;
+  /**
    * List of child nodes.
    */
   children: AccessibilityNode[];
+  /**
+   * Raw AXNode.
+   */
+  rawNode: AXNode;
 };

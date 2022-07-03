@@ -5,17 +5,24 @@ import { AccessibilityNode, AXNode } from "./AccessibilityNode.js";
  */
 export function convert(
   nodes: readonly AXNode[],
-  nodeMap: Map<string, AccessibilityNode>,
-  rawNodeMap: WeakMap<AccessibilityNode, AXNode>
+  nodeMap: Map<string, AccessibilityNode>
 ): void {
   // construct nodes
   for (const node of nodes) {
-    const accessibilityNode = {
+    const accessibilityNode: Omit<AccessibilityNode, "rawNode"> = {
       id: node.nodeId,
+      parentId: node.parentId,
+      backendDOMNodeId: node.backendDOMNodeId,
       children: [],
     };
-    nodeMap.set(accessibilityNode.id, accessibilityNode);
-    rawNodeMap.set(accessibilityNode, node);
+    Object.defineProperty(accessibilityNode, "rawNode", {
+      value: node,
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    });
+    const a = accessibilityNode as AccessibilityNode;
+    nodeMap.set(accessibilityNode.id, a);
   }
   // construct the tree
   for (const node of nodes) {

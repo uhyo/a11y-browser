@@ -6,15 +6,13 @@ import { convert } from "./convert.js";
  */
 export class AccessibilityTree {
   #nodes: Map<string, AccessibilityNode> = new Map();
-  #rawNodeMap: WeakMap<AccessibilityNode, AXNode> = new WeakMap();
 
   /**
    * Replaces the current tree with a new one.
    */
   public initialize(nodes: readonly AXNode[]): void {
     this.#nodes.clear();
-    this.#rawNodeMap = new WeakMap();
-    convert(nodes, this.#nodes, this.#rawNodeMap);
+    convert(nodes, this.#nodes);
   }
 
   /**
