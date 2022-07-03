@@ -68,6 +68,14 @@ export function render(
         break;
       }
     }
+    case "button": {
+      result += context.theme.button(`[Button: ${node.name.trim()}]`);
+      break;
+    }
+    case "image": {
+      result += context.theme.image(`[Image: ${node.name.trim()}]`);
+      break;
+    }
     default: {
       assertNever(node);
     }

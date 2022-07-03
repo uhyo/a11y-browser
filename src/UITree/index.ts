@@ -44,7 +44,8 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       };
     }
     case "paragraph":
-    case "generic": {
+    case "generic":
+    case "search": {
       return {
         type: "generic",
         selfFlow: "block",
@@ -64,12 +65,29 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         value: rawNode.name?.value,
       };
     }
+    case "button": {
+      return {
+        type: "button",
+        selfFlow: "inline",
+        name: rawNode.name?.value,
+      };
+    }
+    case "img": {
+      const name = rawNode.name?.value;
+      if (!name) {
+        return undefined;
+      }
+      return {
+        type: "image",
+        selfFlow: "inline",
+        name,
+      };
+    }
     default: {
       console.debug(`⚠️ Unknown role: ${role}`);
       return {
-        type: "text",
+        type: "generic",
         selfFlow: "inline",
-        value: rawNode.name?.value,
       };
     }
   }

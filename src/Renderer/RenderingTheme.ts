@@ -9,4 +9,12 @@ export type RenderingTheme = {
    * Theme for heading.
    */
   heading: Theme;
+  /**
+   * Theme for button.
+   */
+  button: Theme;
+  /**
+   * Theme for image.
+   */
+  image: Theme;
 };

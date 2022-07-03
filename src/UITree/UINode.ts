@@ -35,6 +35,17 @@ type HeadingUINode = {
   name: string;
 };
 
+type ReplacedUINode = {
+  type: "button" | "image";
+  name: string;
+};
+
 export type UINode = UINodeBase &
-  (TextUINode | GenericWrapperUINode | NamedUINode | HeadingUINode);
+  (
+    | TextUINode
+    | GenericWrapperUINode
+    | NamedUINode
+    | HeadingUINode
+    | ReplacedUINode
+  );
 export type UINodeInTree = UINodeInTreeBase & UINode;

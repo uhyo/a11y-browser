@@ -18,6 +18,8 @@ export function createDefaultContext(): RenderContext {
     theme: {
       link: chalk.blueBright.underline,
       heading: chalk.cyan.bold,
+      button: chalk.gray,
+      image: chalk.yellowBright,
     },
     blockIndent: "",
     shouldPrintBlockSeparator: false,
