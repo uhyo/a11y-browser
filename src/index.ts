@@ -13,10 +13,11 @@ async function main() {
     headless: true,
   });
   try {
+    const url = process.argv[2] ?? "https://example.com/";
     const page = await browser.newPage();
     const cdp = await page.target().createCDPSession();
     await cdp.send("Accessibility.enable");
-    await page.goto("https://example.com/");
+    await page.goto(url);
     const tree = await cdp.send("Accessibility.getFullAXTree");
     const acc = new AccessibilityTree();
     acc.initialize(tree.nodes);
