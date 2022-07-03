@@ -16,6 +16,12 @@ export type AccessibilityNode = {
    * ID of backend DOM node.
    */
   backendDOMNodeId: number | undefined;
+
+  /**
+   * Role of this node.
+   */
+  role: string;
+
   /**
    * List of child nodes.
    */

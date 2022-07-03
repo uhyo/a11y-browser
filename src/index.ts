@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer";
-import { inspect } from "util";
 import { AccessibilityTree } from "./AccessibilityTree/index.js";
+import { render } from "./Renderer/index.js";
+import { constructUITree } from "./UITree/index.js";
 
 main().catch((error) => {
   console.error(error);
@@ -19,9 +20,13 @@ async function main() {
     const tree = await cdp.send("Accessibility.getFullAXTree");
     const acc = new AccessibilityTree();
     acc.initialize(tree.nodes);
-    console.log(
-      inspect(acc.getById(tree.nodes[0]?.nodeId || "0"), { depth: 10 })
-    );
+    const rootNode = acc.getById(tree.nodes[0]?.nodeId || "0");
+    if (!rootNode) {
+      throw new Error("Root node not found");
+    }
+    const uit = constructUITree(rootNode);
+    // console.log(inspect(uit, { depth: 10 }));
+    console.log(render(uit[0]!));
   } finally {
     await browser.close();
   }

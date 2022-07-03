@@ -13,6 +13,7 @@ export function convert(
       id: node.nodeId,
       parentId: node.parentId,
       backendDOMNodeId: node.backendDOMNodeId,
+      role: node.role?.value ?? "",
       children: [],
     };
     Object.defineProperty(accessibilityNode, "rawNode", {
