@@ -43,7 +43,8 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         name: rawNode.name?.value,
       };
     }
-    case "paragraph": {
+    case "paragraph":
+    case "generic": {
       return {
         type: "generic",
         selfFlow: "block",
@@ -56,7 +57,15 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         name: rawNode.name?.value,
       };
     }
+    case "StaticText": {
+      return {
+        type: "text",
+        selfFlow: "inline",
+        value: rawNode.name?.value,
+      };
+    }
     default: {
+      console.debug(`⚠️ Unknown role: ${role}`);
       return {
         type: "text",
         selfFlow: "inline",
