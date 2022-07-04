@@ -20,6 +20,7 @@ export function createDefaultContext(): RenderContext {
       heading: chalk.cyan.bold,
       button: chalk.gray,
       image: chalk.yellowBright,
+      structure: chalk.green,
     },
     blockIndent: "",
     shouldPrintBlockSeparator: false,

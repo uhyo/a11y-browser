@@ -20,7 +20,8 @@ export function render(
       break;
     }
     case "generic":
-    case "section": {
+    case "section":
+    case "listitem": {
       result += renderChildren(node.intrinsicFlow, node.children, context);
       break;
     }
@@ -85,6 +86,34 @@ export function render(
         )}]`
       );
       break;
+    }
+    case "list": {
+      result +=
+        context.theme.structure(
+          `List${node.name ? `: ${node.name.trim()}` : ""}`
+        ) + "\n";
+      if (node.intrinsicFlow === "inline") {
+        for (const child of node.children) {
+          if (child.type === "listitem") {
+            result +=
+              context.theme.structure("- ") + render(child, context) + "\n";
+          } else {
+            result += render(child, context) + "\n";
+          }
+        }
+        context.shouldPrintBlockSeparator = true;
+        break;
+      } else {
+        const oldIndent = context.blockIndent;
+        context.blockIndent = context.theme.structure("|") + " " + oldIndent;
+        context.shouldPrintBlockSeparator = false;
+        const body = renderChildren("block", node.children, context);
+        context.blockIndent = oldIndent;
+
+        result += body;
+        context.shouldPrintBlockSeparator = true;
+        break;
+      }
     }
     default: {
       assertNever(node);

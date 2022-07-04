@@ -99,6 +99,20 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         hasPopup: getProperty(rawNode, "hasPopup", "false") !== "false",
       };
     }
+    case "list": {
+      const name = rawNode.name?.value;
+      return {
+        type: "list",
+        selfFlow: "block",
+        name: name ?? "",
+      };
+    }
+    case "listitem": {
+      return {
+        type: "listitem",
+        selfFlow: "inline",
+      };
+    }
     default: {
       console.debug(`⚠️ Unknown role: ${role}`);
       console.debug(inspect(rawNode, { depth: 10 }));
@@ -120,11 +134,18 @@ function getProperty(
   );
 }
 
+/**
+ * If any of nodes contain block flow, aligns all nodes to "block" and returns "block".
+ */
 function flowMax(nodes: readonly UINodeInTree[]): UIFlow {
-  for (const { selfFlow, intrinsicFlow } of nodes) {
-    if (intrinsicFlow === "block" || selfFlow === "block") {
-      return "block";
-    }
+  const result = nodes.some(({ selfFlow, intrinsicFlow }) => {
+    return selfFlow === "block" || intrinsicFlow === "block";
+  });
+  if (!result) {
+    return "inline";
   }
-  return "inline";
+  for (const node of nodes) {
+    node.selfFlow = "block";
+  }
+  return "block";
 }

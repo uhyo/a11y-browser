@@ -17,4 +17,8 @@ export type RenderingTheme = {
    * Theme for image.
    */
   image: Theme;
+  /**
+   * Theme for generic page structure.
+   */
+  structure: Theme;
 };

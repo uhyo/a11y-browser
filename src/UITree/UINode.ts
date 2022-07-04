@@ -21,11 +21,11 @@ type TextUINode = {
 };
 
 type GenericWrapperUINode = {
-  type: "generic";
+  type: "generic" | "listitem";
 };
 
 type NamedUINode = {
-  type: "section" | "link";
+  type: "section" | "link" | "list";
   name: string;
 };
 
