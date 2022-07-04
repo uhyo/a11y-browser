@@ -40,6 +40,12 @@ type ReplacedUINode = {
   name: string;
 };
 
+type InputFieldUINode = {
+  type: "input";
+  name: string;
+  hasPopup: boolean;
+};
+
 export type UINode = UINodeBase &
   (
     | TextUINode
@@ -47,5 +53,6 @@ export type UINode = UINodeBase &
     | NamedUINode
     | HeadingUINode
     | ReplacedUINode
+    | InputFieldUINode
   );
 export type UINodeInTree = UINodeInTreeBase & UINode;

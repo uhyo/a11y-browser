@@ -76,6 +76,16 @@ export function render(
       result += context.theme.image(`[Image: ${node.name.trim()}]`);
       break;
     }
+    case "input": {
+      result += context.theme.button(
+        `[Input(${node.name.trim()}) ${renderChildren(
+          "inline",
+          node.children,
+          context
+        )}]`
+      );
+      break;
+    }
     default: {
       assertNever(node);
     }

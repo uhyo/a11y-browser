@@ -1,4 +1,5 @@
 import { Protocol } from "devtools-protocol";
+import { inspect } from "util";
 import {
   AccessibilityNode,
   AXNode,
@@ -25,7 +26,8 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     return undefined;
   }
   switch (role) {
-    case "none": {
+    case "none":
+    case "IframePresentational": {
       return undefined;
     }
     case "heading": {
@@ -43,8 +45,13 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         name: rawNode.name?.value,
       };
     }
+    case "generic": {
+      return {
+        type: "generic",
+        selfFlow: "inline",
+      };
+    }
     case "paragraph":
-    case "generic":
     case "search": {
       return {
         type: "generic",
@@ -83,8 +90,18 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         name,
       };
     }
+    case "combobox": {
+      const name = rawNode.name?.value;
+      return {
+        type: "input",
+        selfFlow: "inline",
+        name: name ?? "",
+        hasPopup: getProperty(rawNode, "hasPopup", "false") !== "false",
+      };
+    }
     default: {
       console.debug(`⚠️ Unknown role: ${role}`);
+      console.debug(inspect(rawNode, { depth: 10 }));
       return {
         type: "generic",
         selfFlow: "inline",
