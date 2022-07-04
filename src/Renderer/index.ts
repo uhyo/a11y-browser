@@ -1,4 +1,4 @@
-import { UIFlow, UINodeInTree } from "../UITree/UINode.js";
+import { UINodeInTree } from "../UITree/UINode.js";
 import { assertNever } from "../util/assertNever.js";
 import { createDefaultContext, RenderContext } from "./RenderContext.js";
 
@@ -30,13 +30,17 @@ export function render(
           result += context.theme.supplemental(`(${name})`) + "\n";
         }
       }
-      result += renderChildren(node.intrinsicFlow, node.children, context);
+      if (node.intrinsicFlow === "inline") {
+        result += renderInlineChildren(node.children, context);
+      } else {
+        result += renderBlockChildren(node.children, context);
+      }
       break;
     }
     case "link": {
       if (node.intrinsicFlow === "inline") {
         const name = node.name?.trim();
-        const content = renderChildren("inline", node.children, context);
+        const content = renderInlineChildren(node.children, context);
         result += context.theme.link(
           `<Link:${maybeUndefinedAnd(
             name !== content && node.name?.trim(),
@@ -50,11 +54,12 @@ export function render(
           context.theme.link(`<Link:${node.name?.trim() ?? ""}>`) + "\n";
         result += header;
 
-        const oldIndent = context.blockIndent;
-        context.blockIndent = context.theme.link("|") + " " + oldIndent;
         context.shouldPrintBlockSeparator = false;
-        const body = renderChildren("block", node.children, context);
-        context.blockIndent = oldIndent;
+        const body = renderBlockChildren(
+          node.children,
+          context,
+          context.theme.link("|") + " "
+        );
 
         result += body;
         context.shouldPrintBlockSeparator = true;
@@ -65,7 +70,7 @@ export function render(
       const headerMark = node.level <= 0 ? "#?" : "#".repeat(node.level);
       if (node.intrinsicFlow === "inline") {
         result += context.theme.heading(
-          `${headerMark} ${renderChildren("inline", node.children, context)}`
+          `${headerMark} ${renderInlineChildren(node.children, context)}`
         );
         break;
       } else {
@@ -74,11 +79,12 @@ export function render(
           "\n";
         result += header;
 
-        const oldIndent = context.blockIndent;
-        context.blockIndent = context.theme.heading("|") + " " + oldIndent;
         context.shouldPrintBlockSeparator = false;
-        const body = renderChildren("block", node.children, context);
-        context.blockIndent = oldIndent;
+        const body = renderBlockChildren(
+          node.children,
+          context,
+          context.theme.heading("|") + " "
+        );
 
         result += body;
         context.shouldPrintBlockSeparator = true;
@@ -99,7 +105,7 @@ export function render(
           node.name?.trim(),
           "(",
           ")"
-        )} ${renderChildren("inline", node.children, context)}]`
+        )} ${renderInlineChildren(node.children, context)}]`
       );
       break;
     }
@@ -120,11 +126,12 @@ export function render(
         context.shouldPrintBlockSeparator = true;
         break;
       } else {
-        const oldIndent = context.blockIndent;
-        context.blockIndent = context.theme.structure("|") + " " + oldIndent;
         context.shouldPrintBlockSeparator = false;
-        const body = renderChildren("block", node.children, context);
-        context.blockIndent = oldIndent;
+        const body = renderBlockChildren(
+          node.children,
+          context,
+          context.theme.structure("|") + " "
+        );
 
         result += body;
         context.shouldPrintBlockSeparator = true;
@@ -142,11 +149,12 @@ export function render(
         context.theme.structure(
           `${header}${maybeUndefinedAnd(node.name?.trim(), " ")}`
         ) + "\n";
-      const oldIndent = context.blockIndent;
-      context.blockIndent = context.theme.structure("|") + " " + oldIndent;
       context.shouldPrintBlockSeparator = false;
-      const body = renderChildren("block", node.children, context);
-      context.blockIndent = oldIndent;
+      const body = renderBlockChildren(
+        node.children,
+        context,
+        context.theme.structure("|") + " "
+      );
 
       result += body;
       context.shouldPrintBlockSeparator = true;
@@ -163,25 +171,25 @@ export function render(
   return result;
 }
 
-function renderChildren(
-  flow: UIFlow,
+function renderInlineChildren(
   nodes: readonly UINodeInTree[],
   context: RenderContext
 ): string {
-  switch (flow) {
-    case "inline": {
-      return nodes.map((node) => render(node, context)).join("");
-    }
-    case "block": {
-      const lines = nodes
-        .map((node) => render(node, context))
-        .join("")
-        .split("\n");
-      const res = lines.map((line) => context.blockIndent + line).join("\n");
-      context.shouldPrintBlockSeparator = true;
-      return res;
-    }
-  }
+  return nodes.map((node) => render(node, context)).join("");
+}
+
+function renderBlockChildren(
+  nodes: readonly UINodeInTree[],
+  context: RenderContext,
+  indent: string = ""
+): string {
+  const lines = nodes
+    .map((node) => render(node, context))
+    .join("")
+    .split("\n");
+  const res = lines.map((line) => indent + line).join("\n");
+  context.shouldPrintBlockSeparator = true;
+  return res;
 }
 
 function maybeUndefinedAnd(

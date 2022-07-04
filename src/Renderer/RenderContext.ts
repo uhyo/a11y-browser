@@ -4,10 +4,6 @@ import { RenderingTheme } from "./RenderingTheme.js";
 export type RenderContext = {
   theme: RenderingTheme;
   /**
-   * Indent that should prefix each line.
-   */
-  blockIndent: string;
-  /**
    * Flag on whether separator between blocks should be printed.
    */
   shouldPrintBlockSeparator: boolean;
@@ -23,7 +19,6 @@ export function createDefaultContext(): RenderContext {
       structure: chalk.green,
       supplemental: chalk.gray,
     },
-    blockIndent: "",
     shouldPrintBlockSeparator: false,
   };
 }
