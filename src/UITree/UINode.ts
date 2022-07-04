@@ -13,6 +13,10 @@ export type UINodeBase = {
    * Flow which this node prefers to be rendered with.
    */
   selfFlow: UIFlow;
+  /**
+   * Accessible name.
+   */
+  name: string | undefined;
 };
 
 type TextUINode = {
@@ -21,11 +25,9 @@ type TextUINode = {
 };
 
 type GenericWrapperUINode = {
-  type: "generic" | "listitem";
-};
-
-type NamedUINode = {
   type:
+    | "generic"
+    | "listitem"
     | "section"
     | "link"
     | "list"
@@ -33,23 +35,19 @@ type NamedUINode = {
     | "complementary"
     | "banner"
     | "contentinfo";
-  name: string;
 };
 
 type HeadingUINode = {
   type: "heading";
   level: number;
-  name: string;
 };
 
 type ReplacedUINode = {
   type: "button" | "image";
-  name: string;
 };
 
 type InputFieldUINode = {
   type: "input";
-  name: string;
   hasPopup: boolean;
 };
 
@@ -57,7 +55,6 @@ export type UINode = UINodeBase &
   (
     | TextUINode
     | GenericWrapperUINode
-    | NamedUINode
     | HeadingUINode
     | ReplacedUINode
     | InputFieldUINode

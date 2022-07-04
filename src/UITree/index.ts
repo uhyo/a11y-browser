@@ -52,6 +52,7 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     case "tooltip": {
       return {
         type: "generic",
+        name: rawNode.name?.value,
         selfFlow: "inline",
       };
     }
@@ -60,6 +61,7 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     case "article": {
       return {
         type: "generic",
+        name: rawNode.name?.value,
         selfFlow: "block",
       };
     }
@@ -75,6 +77,7 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       return {
         type: "text",
         selfFlow: "inline",
+        name: rawNode.name?.value,
         value: rawNode.name?.value,
       };
     }
@@ -106,16 +109,16 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       };
     }
     case "list": {
-      const name = rawNode.name?.value;
       return {
         type: "list",
         selfFlow: "block",
-        name: name ?? "",
+        name: rawNode.name?.value,
       };
     }
     case "listitem": {
       return {
         type: "listitem",
+        name: rawNode.name?.value,
         selfFlow: "inline",
       };
     }
@@ -134,6 +137,7 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       console.debug(inspect(rawNode, { depth: 10 }));
       return {
         type: "generic",
+        name: rawNode.name?.value,
         selfFlow: "inline",
       };
     }

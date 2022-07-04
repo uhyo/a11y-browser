@@ -22,17 +22,32 @@ export function render(
     case "generic":
     case "section":
     case "listitem": {
+      const name = node.name?.trim();
+      if (name) {
+        if (node.intrinsicFlow === "inline") {
+          result += context.theme.supplemental(`(${name})`);
+        } else {
+          result += context.theme.supplemental(`(${name})`) + "\n";
+        }
+      }
       result += renderChildren(node.intrinsicFlow, node.children, context);
       break;
     }
     case "link": {
       if (node.intrinsicFlow === "inline") {
+        const name = node.name?.trim();
+        const content = renderChildren("inline", node.children, context);
         result += context.theme.link(
-          `<Link: ${renderChildren("inline", node.children, context)}>`
+          `<Link:${maybeUndefinedAnd(
+            name !== content && node.name?.trim(),
+            "",
+            content ? " " : ""
+          )}${content}>`
         );
         break;
       } else {
-        const header = context.theme.link(`<Link: ${node.name.trim()}>`) + "\n";
+        const header =
+          context.theme.link(`<Link:${node.name?.trim() ?? ""}}>`) + "\n";
         result += header;
 
         const oldIndent = context.blockIndent;
@@ -55,7 +70,8 @@ export function render(
         break;
       } else {
         const header =
-          context.theme.heading(`${headerMark} ${node.name.trim()}`) + "\n";
+          context.theme.heading(`${headerMark} ${node.name?.trim() ?? ""}`) +
+          "\n";
         result += header;
 
         const oldIndent = context.blockIndent;
@@ -70,27 +86,27 @@ export function render(
       }
     }
     case "button": {
-      result += context.theme.button(`[Button: ${node.name.trim()}]`);
+      result += context.theme.button(`[Button: ${node.name?.trim() ?? ""}]`);
       break;
     }
     case "image": {
-      result += context.theme.image(`[Image: ${node.name.trim()}]`);
+      result += context.theme.image(`[Image: ${node.name?.trim() ?? ""}]`);
       break;
     }
     case "input": {
       result += context.theme.button(
-        `[Input(${node.name.trim()}) ${renderChildren(
-          "inline",
-          node.children,
-          context
-        )}]`
+        `[Input${maybeUndefinedAnd(
+          node.name?.trim(),
+          "(",
+          ")"
+        )} ${renderChildren("inline", node.children, context)}]`
       );
       break;
     }
     case "list": {
       result +=
         context.theme.structure(
-          `List${node.name ? `: ${node.name.trim()}` : ""}`
+          `List${maybeUndefinedAnd(node.name?.trim(), ": ")}`
         ) + "\n";
       if (node.intrinsicFlow === "inline") {
         for (const child of node.children) {
@@ -130,7 +146,7 @@ export function render(
 
       result +=
         context.theme.structure(
-          `${header} ${node.name ? `: ${node.name.trim()}` : ""}`
+          `${header}${maybeUndefinedAnd(node.name?.trim(), " ")}`
         ) + "\n";
       const oldIndent = context.blockIndent;
       context.blockIndent = context.theme.structure("|") + " " + oldIndent;
@@ -172,4 +188,12 @@ function renderChildren(
       return res;
     }
   }
+}
+
+function maybeUndefinedAnd(
+  str: string | undefined | false,
+  prefix = "",
+  suffix = ""
+): string {
+  return !str ? "" : prefix + str + suffix;
 }

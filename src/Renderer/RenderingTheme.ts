@@ -21,4 +21,8 @@ export type RenderingTheme = {
    * Theme for generic page structure.
    */
   structure: Theme;
+  /**
+   * Theme for supplemental information.
+   */
+  supplemental: Theme;
 };
