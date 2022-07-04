@@ -115,6 +115,33 @@ export function render(
         break;
       }
     }
+    case "navigation":
+    case "complementary":
+    case "banner":
+    case "contentinfo": {
+      const header =
+        node.type === "navigation"
+          ? "Navigation"
+          : node.type === "complementary"
+          ? "Complementary"
+          : node.type === "banner"
+          ? "Banner"
+          : "Contentinfo";
+
+      result +=
+        context.theme.structure(
+          `${header} ${node.name ? `: ${node.name.trim()}` : ""}`
+        ) + "\n";
+      const oldIndent = context.blockIndent;
+      context.blockIndent = context.theme.structure("|") + " " + oldIndent;
+      context.shouldPrintBlockSeparator = false;
+      const body = renderChildren("block", node.children, context);
+      context.blockIndent = oldIndent;
+
+      result += body;
+      context.shouldPrintBlockSeparator = true;
+      break;
+    }
     default: {
       assertNever(node);
     }

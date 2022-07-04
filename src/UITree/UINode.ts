@@ -25,7 +25,14 @@ type GenericWrapperUINode = {
 };
 
 type NamedUINode = {
-  type: "section" | "link" | "list";
+  type:
+    | "section"
+    | "link"
+    | "list"
+    | "navigation"
+    | "complementary"
+    | "banner"
+    | "contentinfo";
   name: string;
 };
 

@@ -27,7 +27,8 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
   }
   switch (role) {
     case "none":
-    case "IframePresentational": {
+    case "IframePresentational":
+    case "LineBreak": {
       return undefined;
     }
     case "heading": {
@@ -45,20 +46,25 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         name: rawNode.name?.value,
       };
     }
-    case "generic": {
+    case "generic":
+    case "time":
+    case "alert":
+    case "tooltip": {
       return {
         type: "generic",
         selfFlow: "inline",
       };
     }
     case "paragraph":
-    case "search": {
+    case "search":
+    case "article": {
       return {
         type: "generic",
         selfFlow: "block",
       };
     }
-    case "RootWebArea": {
+    case "RootWebArea":
+    case "Section": {
       return {
         type: "section",
         selfFlow: "block",
@@ -111,6 +117,16 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       return {
         type: "listitem",
         selfFlow: "inline",
+      };
+    }
+    case "navigation":
+    case "complementary":
+    case "banner":
+    case "contentinfo": {
+      return {
+        type: role,
+        selfFlow: "block",
+        name: rawNode.name?.value ?? "",
       };
     }
     default: {
