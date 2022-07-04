@@ -29,6 +29,7 @@ type GenericWrapperUINode = {
     | "generic"
     | "listitem"
     | "section"
+    | "article"
     | "link"
     | "list"
     | "navigation"

@@ -47,7 +47,7 @@ export function render(
         break;
       } else {
         const header =
-          context.theme.link(`<Link:${node.name?.trim() ?? ""}}>`) + "\n";
+          context.theme.link(`<Link:${node.name?.trim() ?? ""}>`) + "\n";
         result += header;
 
         const oldIndent = context.blockIndent;
@@ -134,15 +134,9 @@ export function render(
     case "navigation":
     case "complementary":
     case "banner":
-    case "contentinfo": {
-      const header =
-        node.type === "navigation"
-          ? "Navigation"
-          : node.type === "complementary"
-          ? "Complementary"
-          : node.type === "banner"
-          ? "Banner"
-          : "Contentinfo";
+    case "contentinfo":
+    case "article": {
+      const header = node.type.charAt(0).toUpperCase() + node.type.slice(1);
 
       result +=
         context.theme.structure(

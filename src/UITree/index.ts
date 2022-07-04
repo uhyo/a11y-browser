@@ -57,8 +57,7 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       };
     }
     case "paragraph":
-    case "search":
-    case "article": {
+    case "search": {
       return {
         type: "generic",
         name: rawNode.name?.value,
@@ -125,7 +124,8 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     case "navigation":
     case "complementary":
     case "banner":
-    case "contentinfo": {
+    case "contentinfo":
+    case "article": {
       return {
         type: role,
         selfFlow: "block",
