@@ -11,7 +11,7 @@ export function render(
 ): string {
   let result = "";
   if (node.selfFlow === "block" && context.shouldPrintBlockSeparator) {
-    result += "\n";
+    result += "\n\n";
     context.shouldPrintBlockSeparator = false;
   }
   switch (node.type) {
@@ -184,10 +184,10 @@ function renderBlockChildren(
   indent: string = ""
 ): string {
   const lines = nodes
-    .map((node) => render(node, context))
+    .map((node) => render(node, context).trimEnd())
     .join("")
     .split("\n");
-  const res = lines.map((line) => indent + line).join("\n");
+  const res = lines.map((line) => indent + line).join("\n") + "\n";
   context.shouldPrintBlockSeparator = true;
   return res;
 }
