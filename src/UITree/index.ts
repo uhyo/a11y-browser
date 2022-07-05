@@ -89,9 +89,6 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     }
     case "img": {
       const name = rawNode.name?.value;
-      if (!name) {
-        return undefined;
-      }
       return {
         type: "image",
         selfFlow: "inline",
@@ -126,6 +123,9 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     case "banner":
     case "contentinfo":
     case "article": {
+      if (role === "article") {
+        console.debug(inspect(rawNode, { depth: 10 }));
+      }
       return {
         type: role,
         selfFlow: "block",

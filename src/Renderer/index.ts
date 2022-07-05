@@ -96,7 +96,13 @@ export function render(
       break;
     }
     case "image": {
-      result += context.theme.image(`[Image: ${node.name?.trim() ?? ""}]`);
+      const name = node.name?.trim();
+      if (!name) {
+        // in HTML, image with no name is defined to be an unknown image
+        result += context.theme.image(`[Unknown Image]`);
+      } else {
+        result += context.theme.image(`[Image: ${node.name?.trim() ?? ""}]`);
+      }
       break;
     }
     case "input": {
