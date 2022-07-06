@@ -12,10 +12,11 @@ export function constructUITree(node: AccessibilityNode): UINodeInTree[] {
   if (selfNode === undefined) {
     return children;
   }
+  const { flow: intrinsicFlow, nodes } = alignFlow(children);
   const result: UINodeInTree = {
     ...selfNode,
-    intrinsicFlow: flowMax(children),
-    children,
+    intrinsicFlow,
+    children: nodes,
   };
   return [result];
 }
@@ -56,8 +57,7 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
         selfFlow: "inline",
       };
     }
-    case "paragraph":
-    case "search": {
+    case "paragraph": {
       return {
         type: "generic",
         name: rawNode.name?.value,
@@ -122,10 +122,8 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
     case "complementary":
     case "banner":
     case "contentinfo":
-    case "article": {
-      if (role === "article") {
-        console.debug(inspect(rawNode, { depth: 10 }));
-      }
+    case "article":
+    case "search": {
       return {
         type: role,
         selfFlow: "block",
@@ -155,17 +153,55 @@ function getProperty(
 }
 
 /**
- * If any of nodes contain block flow, aligns all nodes to "block" and returns "block".
+ * If given nodes are mix of inline and block flow, wraps inline nodes with a generic block node.
  */
-function flowMax(nodes: readonly UINodeInTree[]): UIFlow {
-  const result = nodes.some(({ selfFlow, intrinsicFlow }) => {
-    return selfFlow === "block" || intrinsicFlow === "block";
-  });
-  if (!result) {
-    return "inline";
+function alignFlow(nodes: UINodeInTree[]): {
+  flow: UIFlow;
+  nodes: UINodeInTree[];
+} {
+  if (nodes.every(nodeRendersInline)) {
+    return {
+      flow: "inline",
+      nodes,
+    };
   }
+  let chunk: UINodeInTree[] = [];
+  const result: UINodeInTree[] = [];
   for (const node of nodes) {
-    node.selfFlow = "block";
+    if (nodeRendersInline(node)) {
+      chunk.push(node);
+    } else {
+      if (chunk.length > 0) {
+        result.push({
+          type: "generic",
+          name: undefined,
+          selfFlow: "block",
+          intrinsicFlow: "inline",
+          children: chunk,
+        });
+        chunk = [];
+      }
+      result.push(node);
+    }
   }
-  return "block";
+  if (chunk.length > 0) {
+    result.push({
+      type: "generic",
+      name: undefined,
+      selfFlow: "block",
+      intrinsicFlow: "inline",
+      children: chunk,
+    });
+  }
+  return {
+    flow: "block",
+    nodes: result,
+  };
+}
+
+/**
+ * Determines whether given node is to be rendered inline.
+ */
+function nodeRendersInline(node: UINodeInTree): boolean {
+  return node.selfFlow === "inline" && node.intrinsicFlow === "inline";
 }

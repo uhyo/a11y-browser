@@ -148,7 +148,8 @@ export function render(
     case "complementary":
     case "banner":
     case "contentinfo":
-    case "article": {
+    case "article":
+    case "search": {
       const header = node.type.charAt(0).toUpperCase() + node.type.slice(1);
 
       result +=
@@ -190,7 +191,7 @@ function renderBlockChildren(
   indent: string = ""
 ): string {
   const lines = nodes
-    .map((node) => render(node, context).trimEnd())
+    .map((node) => render(node, context))
     .join("")
     .split("\n");
   const res = lines.map((line) => indent + line).join("\n") + "\n";

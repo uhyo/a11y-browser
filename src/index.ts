@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import { inspect } from "util";
 import { AccessibilityTree } from "./AccessibilityTree/index.js";
 import { render } from "./Renderer/index.js";
 import { constructUITree } from "./UITree/index.js";
@@ -26,7 +27,7 @@ async function main() {
       throw new Error("Root node not found");
     }
     const uit = constructUITree(rootNode);
-    // console.log(inspect(uit, { depth: 10 }));
+    console.log(inspect(uit, { depth: 15 }));
     console.log(render(uit[0]!));
   } finally {
     await browser.close();

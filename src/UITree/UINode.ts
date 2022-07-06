@@ -35,7 +35,8 @@ type GenericWrapperUINode = {
     | "navigation"
     | "complementary"
     | "banner"
-    | "contentinfo";
+    | "contentinfo"
+    | "search";
 };
 
 type HeadingUINode = {
