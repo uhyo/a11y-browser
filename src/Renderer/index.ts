@@ -198,11 +198,3 @@ function renderBlockChildren(
   context.shouldPrintBlockSeparator = true;
   return res;
 }
-
-function maybeUndefinedAnd(
-  str: string | undefined | false,
-  prefix = "",
-  suffix = ""
-): string {
-  return !str ? "" : prefix + str + suffix;
-}

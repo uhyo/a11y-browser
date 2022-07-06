@@ -1,64 +1,31 @@
-export type UIFlow = "block" | "inline";
+import { AXNode } from "../AccessibilityTree/AccessibilityNode.js";
+import { RenderContext } from "../Renderer/RenderContext.js";
 
-export type UINodeInTreeBase = {
-  /**
-   * Flow of child nodes.
-   */
-  intrinsicFlow: UIFlow;
-  children: UINodeInTree[];
+export type HeaderRenderer = (
+  context: RenderContext,
+  rawNode: AXNode | undefined
+) => string;
+export type InlineRenderer = (
+  context: RenderContext,
+  rawNode: AXNode | undefined,
+  child: string
+) => string;
+
+export type WrapperUINode = {
+  type: "wrapper";
+  renderHeader: HeaderRenderer;
+  children: readonly UINode[];
 };
 
-export type UINodeBase = {
-  /**
-   * Flow which this node prefers to be rendered with.
-   */
-  selfFlow: UIFlow;
-  /**
-   * Accessible name.
-   */
-  name: string | undefined;
+export type BlockUINode = {
+  type: "block";
+  children: readonly UINode[];
 };
 
-type TextUINode = {
-  type: "text";
-  value: string;
+export type InlineUINode = {
+  type: "inline";
+  render: InlineRenderer;
+  children: readonly UINode[];
 };
 
-type GenericWrapperUINode = {
-  type:
-    | "generic"
-    | "listitem"
-    | "section"
-    | "article"
-    | "link"
-    | "list"
-    | "navigation"
-    | "complementary"
-    | "banner"
-    | "contentinfo"
-    | "search";
-};
-
-type HeadingUINode = {
-  type: "heading";
-  level: number;
-};
-
-type ReplacedUINode = {
-  type: "button" | "image";
-};
-
-type InputFieldUINode = {
-  type: "input";
-  hasPopup: boolean;
-};
-
-export type UINode = UINodeBase &
-  (
-    | TextUINode
-    | GenericWrapperUINode
-    | HeadingUINode
-    | ReplacedUINode
-    | InputFieldUINode
-  );
-export type UINodeInTree = UINodeInTreeBase & UINode;
+export type UINode = WrapperUINode | BlockUINode | InlineUINode;

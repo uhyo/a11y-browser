@@ -4,11 +4,27 @@ import {
   AccessibilityNode,
   AXNode,
 } from "../AccessibilityTree/AccessibilityNode.js";
-import { UIFlow, UINode, UINodeInTree } from "./UINode.js";
+import {
+  buttonInline,
+  comboBoxInline,
+  genericHeader,
+  genericInline,
+  headingHeader,
+  headingInline,
+  imageInline,
+  linkHeader,
+  linkInline,
+  listHeader,
+  textInline,
+} from "./nodeRenderers.js";
+import { InlineUINode, UINode } from "./UINode.js";
 
-export function constructUITree(node: AccessibilityNode): UINodeInTree[] {
-  const selfNode = convertSelf(node);
+const emptyArray: readonly [] = [];
+
+export function constructUITree(node: AccessibilityNode): UINode[] {
   const children = node.children.flatMap((child) => constructUITree(child));
+
+  const selfNode = convertSelf(node, children);
   if (selfNode === undefined) {
     return children;
   }
@@ -21,7 +37,10 @@ export function constructUITree(node: AccessibilityNode): UINodeInTree[] {
   return [result];
 }
 
-function convertSelf(node: AccessibilityNode): UINode | undefined {
+function convertSelf(
+  node: AccessibilityNode,
+  children: readonly UINode[]
+): UINode | undefined {
   const { rawNode, role } = node;
   if (rawNode.ignored) {
     return undefined;
@@ -33,82 +52,96 @@ function convertSelf(node: AccessibilityNode): UINode | undefined {
       return undefined;
     }
     case "heading": {
+      if (children.every(isInlineNode)) {
+        return {
+          type: "inline",
+          render: headingInline,
+          children,
+        };
+      }
       return {
-        type: "heading",
-        level: Number(getProperty(rawNode, "level", 0)),
-        selfFlow: "block",
-        name: rawNode.name?.value,
+        type: "wrapper",
+        renderHeader: headingHeader,
+        children,
       };
     }
     case "link": {
+      if (children.every(isInlineNode)) {
+        return {
+          type: "inline",
+          render: linkInline,
+          children,
+        };
+      }
       return {
-        type: "link",
-        selfFlow: "inline",
-        name: rawNode.name?.value,
+        type: "wrapper",
+        renderHeader: linkHeader,
+        children,
       };
     }
     case "generic":
     case "time":
     case "alert":
     case "tooltip": {
+      if (children.every(isInlineNode)) {
+        return {
+          type: "inline",
+          render: genericInline,
+          children,
+        };
+      }
       return {
-        type: "generic",
-        name: rawNode.name?.value,
-        selfFlow: "inline",
+        type: "wrapper",
+        renderHeader: genericHeader,
+        children,
       };
     }
     case "paragraph": {
       return {
-        type: "generic",
-        name: rawNode.name?.value,
-        selfFlow: "block",
+        type: "block",
+        children,
       };
     }
     case "RootWebArea":
     case "Section": {
       return {
-        type: "section",
-        selfFlow: "block",
-        name: rawNode.name?.value,
+        type: "block",
+        children,
       };
     }
     case "StaticText": {
       return {
-        type: "text",
-        selfFlow: "inline",
-        name: rawNode.name?.value,
-        value: rawNode.name?.value,
+        type: "inline",
+        render: textInline,
+        children: emptyArray,
       };
     }
     case "button": {
       return {
-        type: "button",
-        selfFlow: "inline",
-        name: rawNode.name?.value,
+        type: "inline",
+        render: buttonInline,
+        children,
       };
     }
     case "img": {
-      const name = rawNode.name?.value;
       return {
-        type: "image",
-        selfFlow: "inline",
-        name,
+        type: "inline",
+        render: imageInline,
+        children: emptyArray,
       };
     }
     case "combobox": {
-      const name = rawNode.name?.value;
       return {
-        type: "input",
-        selfFlow: "inline",
-        name: name ?? "",
-        hasPopup: getProperty(rawNode, "hasPopup", "false") !== "false",
+        type: "inline",
+        render: comboBoxInline,
+        children,
       };
     }
     case "list": {
       return {
-        type: "list",
-        selfFlow: "block",
-        name: rawNode.name?.value,
+        type: "wrapper",
+        renderHeader: listHeader,
+        children,
       };
     }
     case "listitem": {
@@ -155,28 +188,16 @@ function getProperty(
 /**
  * If given nodes are mix of inline and block flow, wraps inline nodes with a generic block node.
  */
-function alignFlow(nodes: UINodeInTree[]): {
-  flow: UIFlow;
-  nodes: UINodeInTree[];
-} {
-  if (nodes.every(nodeRendersInline)) {
-    return {
-      flow: "inline",
-      nodes,
-    };
-  }
-  let chunk: UINodeInTree[] = [];
-  const result: UINodeInTree[] = [];
+function getBlockList(nodes: UINode[]): UINode[] {
+  let chunk: UINode[] = [];
+  const result: UINode[] = [];
   for (const node of nodes) {
-    if (nodeRendersInline(node)) {
+    if (node.type === "inline") {
       chunk.push(node);
     } else {
       if (chunk.length > 0) {
         result.push({
-          type: "generic",
-          name: undefined,
-          selfFlow: "block",
-          intrinsicFlow: "inline",
+          type: "block",
           children: chunk,
         });
         chunk = [];
@@ -186,22 +207,13 @@ function alignFlow(nodes: UINodeInTree[]): {
   }
   if (chunk.length > 0) {
     result.push({
-      type: "generic",
-      name: undefined,
-      selfFlow: "block",
-      intrinsicFlow: "inline",
+      type: "block",
       children: chunk,
     });
   }
-  return {
-    flow: "block",
-    nodes: result,
-  };
+  return result;
 }
 
-/**
- * Determines whether given node is to be rendered inline.
- */
-function nodeRendersInline(node: UINodeInTree): boolean {
-  return node.selfFlow === "inline" && node.intrinsicFlow === "inline";
+function isInlineNode(node: UINode): node is InlineUINode {
+  return node.type === "inline";
 }
