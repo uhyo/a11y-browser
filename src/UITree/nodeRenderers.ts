@@ -1,8 +1,8 @@
 import { Protocol } from "devtools-protocol";
 import { AXNode } from "../AccessibilityTree/AccessibilityNode.js";
-import { HeaderRenderer, InlineRenderer } from "./UINode.js";
+import { ParentRenderer, StandaloneRenderer } from "./UINode.js";
 
-export const genericInline: InlineRenderer = (context, rawNode, child) => {
+export const genericInline: ParentRenderer = (context, rawNode, child) => {
   const name = getName(rawNode);
   if (name && name !== child) {
     return (
@@ -14,30 +14,43 @@ export const genericInline: InlineRenderer = (context, rawNode, child) => {
   return child;
 };
 
-export const genericHeader: HeaderRenderer = (context, rawNode) => {
+export const genericBlock: ParentRenderer = (context, rawNode, child) => {
+  const name = getName(rawNode);
+  if (name) {
+    return (
+      context.theme.supplemental(`(${name}: `) +
+      child +
+      context.theme.supplemental(")") +
+      "\n"
+    );
+  }
+  return child + "\n";
+};
+
+export const genericHeader: StandaloneRenderer = (context, rawNode) => {
   const name = getName(rawNode);
   return context.theme.supplemental(name ?? "");
 };
 
-export const textInline: InlineRenderer = (context, rawNode) => {
+export const textInline: ParentRenderer = (context, rawNode) => {
   return getName(rawNode) ?? "";
 };
 
-export const headingInline: InlineRenderer = (context, rawNode, child) => {
+export const headingBlock: ParentRenderer = (context, rawNode, child) => {
   const level = Number(getProperty(rawNode, "level", 0));
   const headerMark = level <= 0 ? "#?" : "#".repeat(level);
-  return context.theme.heading(headerMark) + " " + child;
+  return context.theme.heading(`${headerMark} ${child}`) + "\n";
 };
 
-export const headingHeader: HeaderRenderer = (context, rawNode) => {
+export const headingHeader: StandaloneRenderer = (context, rawNode) => {
   const level = Number(getProperty(rawNode, "level", 0));
   const headerMark = level <= 0 ? "#?" : "#".repeat(level);
-  return (
-    context.theme.heading(headerMark) + maybeUndefinedAnd(getName(rawNode), " ")
+  return context.theme.heading(
+    headerMark + maybeUndefinedAnd(getName(rawNode), " ")
   );
 };
 
-export const linkInline: InlineRenderer = (context, rawNode, child) => {
+export const linkInline: ParentRenderer = (context, rawNode, child) => {
   const name = getName(rawNode);
   return context.theme.link(
     `<Link:${maybeUndefinedAnd(
@@ -48,12 +61,12 @@ export const linkInline: InlineRenderer = (context, rawNode, child) => {
   );
 };
 
-export const linkHeader: HeaderRenderer = (context, rawNode) => {
+export const linkHeader: StandaloneRenderer = (context, rawNode) => {
   const name = getName(rawNode);
   return context.theme.link(`<Link:${name?.trim() ?? ""}>`);
 };
 
-export const buttonInline: InlineRenderer = (context, rawNode, child) => {
+export const buttonInline: ParentRenderer = (context, rawNode, child) => {
   const name = getName(rawNode);
   return context.theme.button(
     `[Button${maybeUndefinedAnd(
@@ -64,7 +77,7 @@ export const buttonInline: InlineRenderer = (context, rawNode, child) => {
   );
 };
 
-export const imageInline: InlineRenderer = (context, rawNode) => {
+export const imageInline: ParentRenderer = (context, rawNode) => {
   const name = getName(rawNode)?.trim();
   if (!name) {
     return context.theme.image("[Unknown Image]");
@@ -72,16 +85,28 @@ export const imageInline: InlineRenderer = (context, rawNode) => {
   return context.theme.image(`[Image: ${name}]`);
 };
 
-export const comboBoxInline: InlineRenderer = (context, rawNode, child) => {
+export const comboBoxInline: ParentRenderer = (context, rawNode, child) => {
   const name = getName(rawNode)?.trim();
   return context.theme.button(
     `[Input${maybeUndefinedAnd(name, "(", ")")} ${child}]`
   );
 };
 
-export const listHeader: HeaderRenderer = (context, rawNode) => {
+export const listHeader: StandaloneRenderer = (context, rawNode) => {
   const name = getName(rawNode)?.trim();
   return context.theme.structure(`List${maybeUndefinedAnd(name, ": ")}`);
+};
+
+export const listMarker: StandaloneRenderer = (context, rawNode) => {
+  return context.theme.structure("- ");
+};
+
+export const regionHeader: StandaloneRenderer = (context, rawNode) => {
+  const role: string = rawNode?.role?.value ?? "";
+  const header = role.charAt(0).toUpperCase() + role.slice(1);
+  return context.theme.structure(
+    header + maybeUndefinedAnd(getName(rawNode), " ")
+  );
 };
 
 function getProperty(

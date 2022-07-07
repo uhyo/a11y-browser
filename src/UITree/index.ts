@@ -1,20 +1,19 @@
-import { Protocol } from "devtools-protocol";
 import { inspect } from "util";
-import {
-  AccessibilityNode,
-  AXNode,
-} from "../AccessibilityTree/AccessibilityNode.js";
+import { AccessibilityNode } from "../AccessibilityTree/AccessibilityNode.js";
 import {
   buttonInline,
   comboBoxInline,
+  genericBlock,
   genericHeader,
   genericInline,
+  headingBlock,
   headingHeader,
-  headingInline,
   imageInline,
   linkHeader,
   linkInline,
   listHeader,
+  listMarker,
+  regionHeader,
   textInline,
 } from "./nodeRenderers.js";
 import { InlineUINode, UINode } from "./UINode.js";
@@ -24,20 +23,26 @@ const emptyArray: readonly [] = [];
 export function constructUITree(node: AccessibilityNode): UINode[] {
   const children = node.children.flatMap((child) => constructUITree(child));
 
-  const selfNode = convertSelf(node, children);
-  if (selfNode === undefined) {
+  const uiNode = convertNode(node, children);
+  if (uiNode === undefined) {
     return children;
   }
-  const { flow: intrinsicFlow, nodes } = alignFlow(children);
-  const result: UINodeInTree = {
-    ...selfNode,
-    intrinsicFlow,
-    children: nodes,
-  };
-  return [result];
+  Object.defineProperty(uiNode, "rawNode", {
+    value: node.rawNode,
+    writable: true,
+    enumerable: false,
+    configurable: true,
+  });
+  switch (uiNode.type) {
+    case "wrapper": {
+      uiNode.children = getBlockList(uiNode.children);
+      break;
+    }
+  }
+  return [uiNode];
 }
 
-function convertSelf(
+function convertNode(
   node: AccessibilityNode,
   children: readonly UINode[]
 ): UINode | undefined {
@@ -54,8 +59,8 @@ function convertSelf(
     case "heading": {
       if (children.every(isInlineNode)) {
         return {
-          type: "inline",
-          render: headingInline,
+          type: "block",
+          render: headingBlock,
           children,
         };
       }
@@ -98,14 +103,16 @@ function convertSelf(
     }
     case "paragraph": {
       return {
-        type: "block",
+        type: "wrapper",
+        renderHeader: genericHeader,
         children,
       };
     }
     case "RootWebArea":
     case "Section": {
       return {
-        type: "block",
+        type: "wrapper",
+        renderHeader: genericHeader,
         children,
       };
     }
@@ -147,8 +154,8 @@ function convertSelf(
     case "listitem": {
       return {
         type: "listitem",
-        name: rawNode.name?.value,
-        selfFlow: "inline",
+        renderMarker: listMarker,
+        children,
       };
     }
     case "navigation":
@@ -158,37 +165,27 @@ function convertSelf(
     case "article":
     case "search": {
       return {
-        type: role,
-        selfFlow: "block",
-        name: rawNode.name?.value ?? "",
+        type: "wrapper",
+        renderHeader: regionHeader,
+        children,
       };
     }
     default: {
       console.debug(`⚠️ Unknown role: ${role}`);
       console.debug(inspect(rawNode, { depth: 10 }));
       return {
-        type: "generic",
-        name: rawNode.name?.value,
-        selfFlow: "inline",
+        type: "wrapper",
+        renderHeader: genericHeader,
+        children,
       };
     }
   }
 }
 
-function getProperty(
-  node: AXNode,
-  name: Protocol.Accessibility.AXPropertyName,
-  defaultValue: unknown
-): unknown {
-  return (
-    node.properties?.find((p) => p.name === name)?.value.value ?? defaultValue
-  );
-}
-
 /**
  * If given nodes are mix of inline and block flow, wraps inline nodes with a generic block node.
  */
-function getBlockList(nodes: UINode[]): UINode[] {
+function getBlockList(nodes: readonly UINode[]): UINode[] {
   let chunk: UINode[] = [];
   const result: UINode[] = [];
   for (const node of nodes) {
@@ -198,6 +195,7 @@ function getBlockList(nodes: UINode[]): UINode[] {
       if (chunk.length > 0) {
         result.push({
           type: "block",
+          render: genericBlock,
           children: chunk,
         });
         chunk = [];
@@ -208,6 +206,7 @@ function getBlockList(nodes: UINode[]): UINode[] {
   if (chunk.length > 0) {
     result.push({
       type: "block",
+      render: genericBlock,
       children: chunk,
     });
   }
