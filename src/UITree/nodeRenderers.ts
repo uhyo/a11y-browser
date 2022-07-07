@@ -29,7 +29,7 @@ export const genericBlock: ParentRenderer = (context, rawNode, child) => {
 
 export const genericHeader: StandaloneRenderer = (context, rawNode) => {
   const name = getName(rawNode);
-  return context.theme.supplemental(name ?? "");
+  return name ? context.theme.supplemental(name) : "";
 };
 
 export const textInline: ParentRenderer = (context, rawNode) => {

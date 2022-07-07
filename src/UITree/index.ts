@@ -20,8 +20,22 @@ import { InlineUINode, UINode } from "./UINode.js";
 
 const emptyArray: readonly [] = [];
 
-export function constructUITree(node: AccessibilityNode): UINode[] {
-  const children = node.children.flatMap((child) => constructUITree(child));
+export function constructUITree(node: AccessibilityNode): UINode {
+  const result = constructUITreeRec(node);
+  if (result.length === 1) {
+    return result[0]!;
+  }
+
+  const children = result.some(isInlineNode) ? getBlockList(result) : result;
+  return {
+    type: "block",
+    render: genericBlock,
+    children,
+  };
+}
+
+function constructUITreeRec(node: AccessibilityNode): UINode[] {
+  const children = node.children.flatMap((child) => constructUITreeRec(child));
 
   const uiNode = convertNode(node, children);
   if (uiNode === undefined) {

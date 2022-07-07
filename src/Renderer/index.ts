@@ -18,7 +18,9 @@ export function render(
   switch (node.type) {
     case "wrapper": {
       const header = node.renderHeader(context, node.rawNode);
-      result += header + "\n";
+      if (header) {
+        result += header + "\n";
+      }
       result += renderBlockChildren(node.children, context, header ? "| " : "");
       context.shouldPrintBlockSeparator = true;
       break;

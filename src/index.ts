@@ -28,7 +28,7 @@ async function main() {
     }
     const uit = constructUITree(rootNode);
     console.log(inspect(uit, { depth: 15 }));
-    console.log(render(uit[0]!));
+    process.stdout.write(render(uit));
   } finally {
     await browser.close();
   }
