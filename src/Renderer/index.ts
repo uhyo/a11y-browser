@@ -60,6 +60,7 @@ function renderBlockChildren(
   const lines = nodes
     .map((node) => render(node, context))
     .join("")
+    .trimEnd()
     .split("\n");
   const res = lines.map((line) => indent + line).join("\n") + "\n";
   return res;

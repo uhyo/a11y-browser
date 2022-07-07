@@ -53,7 +53,8 @@ function convertNode(
   switch (role) {
     case "none":
     case "IframePresentational":
-    case "LineBreak": {
+    case "LineBreak":
+    case "RootWebArea": {
       return undefined;
     }
     case "heading": {
@@ -108,7 +109,6 @@ function convertNode(
         children,
       };
     }
-    case "RootWebArea":
     case "Section": {
       return {
         type: "wrapper",
