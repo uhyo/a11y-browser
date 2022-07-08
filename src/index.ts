@@ -1,34 +1,50 @@
+import arg from "arg";
 import puppeteer from "puppeteer";
 import { inspect } from "util";
 import { AccessibilityTree } from "./AccessibilityTree/index.js";
+import { browserMain } from "./Browser/index.js";
 import { render } from "./Renderer/index.js";
 import { constructUITree } from "./UITree/index.js";
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+const args = arg({
+  "--snapshot": Boolean,
 });
+
+const url = args._[0] ?? "https://example.com/";
+
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 
 async function main() {
   const browser = await puppeteer.launch({
     headless: true,
   });
   try {
-    const url = process.argv[2] ?? "https://example.com/";
     const page = await browser.newPage();
-    const cdp = await page.target().createCDPSession();
-    await cdp.send("Accessibility.enable");
     await page.goto(url);
-    const tree = await cdp.send("Accessibility.getFullAXTree");
-    const acc = new AccessibilityTree();
-    acc.initialize(tree.nodes);
-    const rootNode = acc.getById(tree.nodes[0]?.nodeId || "0");
-    if (!rootNode) {
-      throw new Error("Root node not found");
+    if (args["--snapshot"]) {
+      const cdp = await page.target().createCDPSession();
+      await cdp.send("Accessibility.enable");
+      const tree = await cdp.send("Accessibility.getFullAXTree");
+      const acc = new AccessibilityTree();
+      acc.initialize(tree.nodes);
+      const rootNode = acc.getById(tree.nodes[0]?.nodeId || "0");
+      if (!rootNode) {
+        throw new Error("Root node not found");
+      }
+      const uit = constructUITree(rootNode);
+      console.log(inspect(uit, { depth: 15 }));
+      process.stdout.write(render(uit));
+      return;
+    } else {
+      await browserMain(page);
     }
-    const uit = constructUITree(rootNode);
-    console.log(inspect(uit, { depth: 15 }));
-    process.stdout.write(render(uit));
   } finally {
     await browser.close();
   }
