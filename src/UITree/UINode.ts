@@ -8,8 +8,8 @@ export type StandaloneRenderer = (
 export type ParentRenderer = (
   context: RenderContext,
   rawNode: AXNode | undefined,
-  child: string
-) => string;
+  child: IterableIterator<string>
+) => IterableIterator<string>;
 
 type UINodeBase = {
   rawNode?: AXNode;

@@ -40,7 +40,9 @@ async function main() {
       }
       const uit = constructUITree(rootNode);
       console.log(inspect(uit, { depth: 15 }));
-      process.stdout.write(render(uit));
+      for (const line of render(uit)) {
+        process.stdout.write(line);
+      }
       return;
     } else {
       await browserMain(page);

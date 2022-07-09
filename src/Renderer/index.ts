@@ -4,14 +4,14 @@ import { createDefaultContext, RenderContext } from "./RenderContext.js";
 /**
  * Render given node.
  */
-export function render(
+export function* render(
   node: UINode,
   context: RenderContext = createDefaultContext()
-): string {
+): IterableIterator<string> {
   let result = "";
   if (node.type === "wrapper" || node.type === "block") {
     if (context.shouldPrintBlockSeparator) {
-      result += "\n";
+      yield "\n";
       context.shouldPrintBlockSeparator = false;
     }
   }
@@ -19,27 +19,31 @@ export function render(
     case "wrapper": {
       const header = node.renderHeader(context, node.rawNode);
       if (header) {
-        result += header + "\n";
+        yield header + "\n";
       }
-      result += renderBlockChildren(node.children, context, header ? "| " : "");
+      yield* renderBlockChildren(node.children, context, header ? "| " : "");
       context.shouldPrintBlockSeparator = true;
       break;
     }
     case "block": {
-      const children = renderInlineChildren(node.children, context);
-      result += node.render(context, node.rawNode, children);
+      yield* node.render(
+        context,
+        node.rawNode,
+        renderInlineChildren(node.children, context)
+      );
       context.shouldPrintBlockSeparator = true;
       break;
     }
     case "listitem": {
-      result += node.renderMarker(context, node.rawNode);
-      result += renderInlineChildren(node.children, context) + "\n";
+      yield node.renderMarker(context, node.rawNode) +
+        renderInlineChildren(node.children, context) +
+        "\n";
       context.shouldPrintBlockSeparator = true;
       break;
     }
     case "inline": {
       const children = renderInlineChildren(node.children, context);
-      result += node.render(context, node.rawNode, children);
+      yield* node.render(context, node.rawNode, children);
       context.shouldPrintBlockSeparator = false;
       break;
     }
@@ -47,23 +51,23 @@ export function render(
   return result;
 }
 
-function renderInlineChildren(
+function* renderInlineChildren(
   nodes: readonly UINode[],
   context: RenderContext
-): string {
-  return nodes.map((node) => render(node, context)).join("");
+): IterableIterator<string> {
+  for (const node of nodes) {
+    yield* render(node, context);
+  }
 }
 
-function renderBlockChildren(
+function* renderBlockChildren(
   nodes: readonly UINode[],
   context: RenderContext,
   indent: string = ""
-): string {
-  const lines = nodes
-    .map((node) => render(node, context))
-    .join("")
-    .trimEnd()
-    .split("\n");
-  const res = lines.map((line) => indent + line).join("\n") + "\n";
-  return res;
+): IterableIterator<string> {
+  for (const node of nodes) {
+    for (const chunk of render(node, context)) {
+      yield indent + chunk + "\n";
+    }
+  }
 }

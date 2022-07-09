@@ -1,30 +1,33 @@
 import { Protocol } from "devtools-protocol";
 import { AXNode } from "../AccessibilityTree/AccessibilityNode.js";
+import { mapIterator } from "../util/iterator/mapIterator.js";
 import { ParentRenderer, StandaloneRenderer } from "./UINode.js";
 
-export const genericInline: ParentRenderer = (context, rawNode, child) => {
-  const name = getName(rawNode);
-  if (name && name !== child) {
-    return (
-      context.theme.supplemental(`(${name}: `) +
-      child +
-      context.theme.supplemental(")")
-    );
-  }
-  return child;
-};
-
-export const genericBlock: ParentRenderer = (context, rawNode, child) => {
+export const genericInline: ParentRenderer = function* (
+  context,
+  rawNode,
+  child
+) {
   const name = getName(rawNode);
   if (name) {
-    return (
-      context.theme.supplemental(`(${name}: `) +
-      child +
-      context.theme.supplemental(")") +
-      "\n"
-    );
+    yield context.theme.supplemental(`(${name}: `);
   }
-  return child + "\n";
+  yield* child;
+  if (name) {
+    yield context.theme.supplemental(")");
+  }
+};
+
+export const genericBlock: ParentRenderer = function* (
+  context,
+  rawNode,
+  child
+) {
+  const name = getName(rawNode);
+  if (name) {
+    yield context.theme.supplemental(`(${name})`) + "\n";
+  }
+  yield* child;
 };
 
 export const genericHeader: StandaloneRenderer = (context, rawNode) => {
@@ -32,14 +35,20 @@ export const genericHeader: StandaloneRenderer = (context, rawNode) => {
   return name ? context.theme.supplemental(name) : "";
 };
 
-export const textInline: ParentRenderer = (context, rawNode) => {
-  return getName(rawNode) ?? "";
+export const textInline: ParentRenderer = function* (context, rawNode) {
+  yield getName(rawNode) ?? "";
 };
 
-export const headingBlock: ParentRenderer = (context, rawNode, child) => {
+export const headingBlock: ParentRenderer = function* (
+  context,
+  rawNode,
+  child
+) {
   const level = Number(getProperty(rawNode, "level", 0));
   const headerMark = level <= 0 ? "#?" : "#".repeat(level);
-  return context.theme.heading(`${headerMark} ${child}`) + "\n";
+  yield context.theme.heading(`${headerMark} `);
+  yield* mapIterator(child, context.theme.heading);
+  yield "\n";
 };
 
 export const headingHeader: StandaloneRenderer = (context, rawNode) => {
@@ -50,15 +59,11 @@ export const headingHeader: StandaloneRenderer = (context, rawNode) => {
   );
 };
 
-export const linkInline: ParentRenderer = (context, rawNode, child) => {
+export const linkInline: ParentRenderer = function* (context, rawNode, child) {
   const name = getName(rawNode);
-  return context.theme.link(
-    `<Link:${maybeUndefinedAnd(
-      name !== child && name?.trim(),
-      "",
-      child ? " " : ""
-    )}${child}>`
-  );
+  yield context.theme.link(`<Link:${maybeUndefinedAnd(name?.trim())}`);
+  yield* mapIterator(child, context.theme.link);
+  yield context.theme.link(">");
 };
 
 export const linkHeader: StandaloneRenderer = (context, rawNode) => {
@@ -66,30 +71,37 @@ export const linkHeader: StandaloneRenderer = (context, rawNode) => {
   return context.theme.link(`<Link:${name?.trim() ?? ""}>`);
 };
 
-export const buttonInline: ParentRenderer = (context, rawNode, child) => {
+export const buttonInline: ParentRenderer = function* (
+  context,
+  rawNode,
+  child
+) {
   const name = getName(rawNode);
-  return context.theme.button(
-    `[Button${maybeUndefinedAnd(
-      name !== child && name?.trim(),
-      "(",
-      ")"
-    )}${maybeUndefinedAnd(child, ": ")}]`
+  yield context.theme.button(
+    `[Button${maybeUndefinedAnd(name?.trim(), "(", ")")}`
   );
+  yield* mapIterator(child, context.theme.button);
+  yield context.theme.button("]");
 };
 
-export const imageInline: ParentRenderer = (context, rawNode) => {
+export const imageInline: ParentRenderer = function* (context, rawNode) {
   const name = getName(rawNode)?.trim();
-  if (!name) {
-    return context.theme.image("[Unknown Image]");
+  if (name) {
+    yield context.theme.image(`[Image: ${name}]`);
+  } else {
+    yield context.theme.image("[Unknown Image]");
   }
-  return context.theme.image(`[Image: ${name}]`);
 };
 
-export const comboBoxInline: ParentRenderer = (context, rawNode, child) => {
+export const comboBoxInline: ParentRenderer = function* (
+  context,
+  rawNode,
+  child
+) {
   const name = getName(rawNode)?.trim();
-  return context.theme.button(
-    `[Input${maybeUndefinedAnd(name, "(", ")")} ${child}]`
-  );
+  yield context.theme.button(`[Input${maybeUndefinedAnd(name, "(", ")")}`);
+  yield* mapIterator(child, context.theme.button);
+  yield context.theme.button("]");
 };
 
 export const listHeader: StandaloneRenderer = (context, rawNode) => {
