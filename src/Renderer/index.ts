@@ -78,7 +78,7 @@ function* renderBlockChildren(
 ): IterableIterator<string> {
   for (const node of nodes) {
     for (const line of splitByLines(render(node, context))) {
-      yield indent + line;
+      yield indent + line + "\n";
     }
   }
 }

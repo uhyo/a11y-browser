@@ -8,6 +8,7 @@ import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
 import { registerCursorPositionQuery } from "./cursorPositionQuery.js";
+import { handleKeyInput } from "./handleKeyInput.js";
 import { getKeyInputStream } from "./keyInputStream.js";
 import { getResizeEventStream } from "./resizeEventStream.js";
 import {
@@ -79,11 +80,14 @@ export async function browserMain(
             // 3 means Ctrl-C
             break;
           }
+        } else if (handleKeyInput(state, event.input)) {
+          // update the screen
+          await renderFrame();
         }
       } else if (event.type === "resize") {
         [columns, rows] = tty.getWindowSize();
+        await renderFrame();
       }
-      await renderFrame();
     }
   } finally {
     cleanup();
@@ -94,10 +98,24 @@ export async function browserMain(
   async function renderFrame() {
     const { query, cleanup } = registerCursorPositionQuery(terminal);
 
-    setCursorPosition(tty, 0, 0);
+    let skipLines;
+    if (state.scrollY < 0) {
+      // Emulate negative scrolling
+      setCursorPosition(tty, -state.scrollY, 0);
+      // clear screen up to the top of the screen
+      tty.write("\x1b[1J");
+      skipLines = 0;
+    } else {
+      setCursorPosition(tty, 0, 0);
+      skipLines = state.scrollY;
+    }
     for (const line of splitByLines(render(uit))) {
-      // First clear this line and write new line
-      tty.write("\x1b[K" + line);
+      if (skipLines > 0) {
+        skipLines--;
+        continue;
+      }
+      // Clear before and after the line
+      tty.write("\x1b[K" + line + "\x1b[K\n");
       const { row: currentRow } = await query();
       if (currentRow >= rows) {
         break;
