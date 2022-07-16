@@ -10,6 +10,14 @@ export function exitAlternateScreen(tty: NodeJS.WriteStream): void {
   tty.write(trm.exitCaMode ?? "");
 }
 
+export function makeCursorInvisible(tty: NodeJS.WriteStream): void {
+  tty.write(trm.cursorInvisible ?? "");
+}
+
+export function makeCursorVisible(tty: NodeJS.WriteStream): void {
+  tty.write(trm.cursorVisible ?? "");
+}
+
 export function setScrollRegion(
   tty: NodeJS.WriteStream,
   top: number,
@@ -27,9 +35,5 @@ export function setCursorPosition(
   row: number,
   column: number
 ) {
-  tty.write(
-    (trm.cursorAddress ?? "")
-      .replace("%i%p1%d", row.toString())
-      .replace("%p2%d", column.toString())
-  );
+  tty.cursorTo(column, row);
 }

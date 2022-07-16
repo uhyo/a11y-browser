@@ -13,6 +13,8 @@ import { getResizeEventStream } from "./resizeEventStream.js";
 import {
   enterAlternateScreen,
   exitAlternateScreen,
+  makeCursorInvisible,
+  makeCursorVisible,
   setCursorPosition,
   setScrollRegion,
 } from "./terminal.js";
@@ -40,9 +42,11 @@ export async function browserMain(
   // Enter alternate screen
   enterAlternateScreen(tty);
   // Set scroll region
-  setScrollRegion(tty, 0, rows + 100);
+  setScrollRegion(tty, 0, rows + 2);
   setCursorPosition(tty, 0, 0);
+  makeCursorInvisible(tty);
   process.on("exit", () => {
+    makeCursorVisible(tty);
     exitAlternateScreen(tty);
   });
 
@@ -88,17 +92,20 @@ export async function browserMain(
   }
 
   async function renderFrame() {
-    tty.write(trm.clearScreen ?? "");
     const { query, cleanup } = registerCursorPositionQuery(terminal);
 
+    setCursorPosition(tty, 0, 0);
     for (const line of splitByLines(render(uit))) {
-      tty.write(line);
+      // First clear this line and write new line
+      tty.write("\x1b[K" + line);
       const { row: currentRow } = await query();
       if (currentRow >= rows) {
-        tty.write(`${currentRow} / ${rows}`);
         break;
       }
     }
+
+    setCursorPosition(tty, rows - 1, 0);
+    tty.write("\x1b[KLAST LINE");
 
     cleanup();
   }
