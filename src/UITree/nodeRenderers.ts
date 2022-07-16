@@ -28,12 +28,16 @@ export const genericBlock: ParentRenderer = function* (
   if (name) {
     yield context.theme.supplemental(`(${name})`) + "\n";
   }
-  yield* addNewLineToEnd(child);
+  yield* addNewLineToEnd(child, () => context.shouldPrintBlockSeparator);
 };
 
 export const genericHeader: StandaloneRenderer = (context, rawNode) => {
   const name = getName(rawNode);
   return name ? context.theme.supplemental(name) : "";
+};
+
+export const genericIndent: StandaloneRenderer = (context) => {
+  return context.theme.supplemental("|") + " ";
 };
 
 export const textInline: ParentRenderer = function* (context, rawNode) {
@@ -60,6 +64,10 @@ export const headingHeader: StandaloneRenderer = (context, rawNode) => {
   );
 };
 
+export const headingIndent: StandaloneRenderer = (context) => {
+  return context.theme.heading("|") + " ";
+};
+
 export const linkInline: ParentRenderer = function* (context, rawNode, child) {
   const name = getName(rawNode)?.trim();
   if (name) {
@@ -74,6 +82,10 @@ export const linkInline: ParentRenderer = function* (context, rawNode, child) {
 export const linkHeader: StandaloneRenderer = (context, rawNode) => {
   const name = getName(rawNode);
   return context.theme.link(`<Link:${name?.trim() ?? ""}>`);
+};
+
+export const linkIndent: StandaloneRenderer = (context) => {
+  return context.theme.link("|") + " ";
 };
 
 export const buttonInline: ParentRenderer = function* (
@@ -120,6 +132,10 @@ export const listHeader: StandaloneRenderer = (context, rawNode) => {
   return context.theme.structure(`List${maybeUndefinedAnd(name, ": ")}`);
 };
 
+export const listIndent: StandaloneRenderer = (context) => {
+  return context.theme.supplemental("|") + " ";
+};
+
 export const listMarker: StandaloneRenderer = (context, rawNode) => {
   return context.theme.structure("- ");
 };
@@ -130,6 +146,10 @@ export const regionHeader: StandaloneRenderer = (context, rawNode) => {
   return context.theme.structure(
     header + maybeUndefinedAnd(getName(rawNode), " ")
   );
+};
+
+export const regionIndent: StandaloneRenderer = (context) => {
+  return context.theme.structure("|") + " ";
 };
 
 function getProperty(

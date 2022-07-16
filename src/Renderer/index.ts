@@ -22,7 +22,11 @@ export function* render(
       if (header) {
         yield header + "\n";
       }
-      yield* renderBlockChildren(node.children, context, header ? "| " : "");
+      yield* renderBlockChildren(
+        node.children,
+        context,
+        header ? node.renderIndent(context, node.rawNode) : ""
+      );
       context.shouldPrintBlockSeparator = true;
       break;
     }
@@ -36,9 +40,9 @@ export function* render(
       break;
     }
     case "listitem": {
-      yield node.renderMarker(context, node.rawNode) +
-        renderInlineChildren(node.children, context) +
-        "\n";
+      yield node.renderMarker(context, node.rawNode);
+      yield* renderInlineChildren(node.children, context);
+      yield "\n";
       context.shouldPrintBlockSeparator = true;
       break;
     }
@@ -56,7 +60,13 @@ function* renderInlineChildren(
   nodes: readonly UINode[],
   context: RenderContext
 ): IterableIterator<string> {
+  let isFirst = true;
   for (const node of nodes) {
+    if (isFirst) {
+      isFirst = false;
+    } else {
+      yield " ";
+    }
     yield* render(node, context);
   }
 }

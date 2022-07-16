@@ -18,6 +18,7 @@ type UINodeBase = {
 export type WrapperUINode = UINodeBase & {
   type: "wrapper";
   renderHeader: StandaloneRenderer;
+  renderIndent: StandaloneRenderer;
   children: readonly UINode[];
 };
 

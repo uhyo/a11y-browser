@@ -5,15 +5,20 @@ import {
   comboBoxInline,
   genericBlock,
   genericHeader,
+  genericIndent,
   genericInline,
   headingBlock,
   headingHeader,
+  headingIndent,
   imageInline,
   linkHeader,
+  linkIndent,
   linkInline,
   listHeader,
+  listIndent,
   listMarker,
   regionHeader,
+  regionIndent,
   textInline,
 } from "./nodeRenderers.js";
 import { InlineUINode, UINode } from "./UINode.js";
@@ -82,6 +87,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: headingHeader,
+        renderIndent: headingIndent,
         children,
       };
     }
@@ -96,6 +102,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: linkHeader,
+        renderIndent: linkIndent,
         children,
       };
     }
@@ -113,6 +120,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: genericHeader,
+        renderIndent: genericIndent,
         children,
       };
     }
@@ -120,6 +128,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: genericHeader,
+        renderIndent: genericIndent,
         children,
       };
     }
@@ -127,6 +136,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: genericHeader,
+        renderIndent: genericIndent,
         children,
       };
     }
@@ -162,6 +172,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: listHeader,
+        renderIndent: listIndent,
         children,
       };
     }
@@ -181,6 +192,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: regionHeader,
+        renderIndent: regionIndent,
         children,
       };
     }
@@ -190,6 +202,7 @@ function convertNode(
       return {
         type: "wrapper",
         renderHeader: genericHeader,
+        renderIndent: genericIndent,
         children,
       };
     }
