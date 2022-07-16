@@ -7,6 +7,7 @@ import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
+import { registerCursorPositionQuery } from "./cursorPositionQuery.js";
 import { getKeyInputStream } from "./keyInputStream.js";
 import { getResizeEventStream } from "./resizeEventStream.js";
 import {
@@ -66,7 +67,7 @@ export async function browserMain(
       } as const)
   );
   try {
-    renderFrame();
+    await renderFrame();
     for await (const event of mergeAsync(keyInput, resize)) {
       if (event.type === "key") {
         if (event.key === 0 || event.key === 3) {
@@ -76,7 +77,7 @@ export async function browserMain(
       } else if (event.type === "resize") {
         [columns, rows] = tty.getWindowSize();
       }
-      renderFrame();
+      await renderFrame();
     }
   } finally {
     cleanup();
@@ -84,16 +85,19 @@ export async function browserMain(
     terminal.destroy();
   }
 
-  function renderFrame() {
+  async function renderFrame() {
     tty.write(trm.clearScreen ?? "");
+    const { query, cleanup } = registerCursorPositionQuery(terminal);
 
-    let lines = 0;
     for (const line of splitByLines(render(uit))) {
       tty.write(line);
-      lines++;
-      if (lines >= rows - 1) {
+      const { row: currentRow } = await query();
+      if (currentRow >= rows - 1) {
+        tty.write(`${currentRow} / ${rows}\n`);
         break;
       }
     }
+
+    cleanup();
   }
 }

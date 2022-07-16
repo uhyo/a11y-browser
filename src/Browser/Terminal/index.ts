@@ -3,7 +3,7 @@ import { Stack } from "./Stack.js";
 
 export class Terminal {
   constructor(
-    private readonly output: NodeJS.WriteStream,
+    readonly output: NodeJS.WriteStream,
     private readonly input: NodeJS.ReadStream
   ) {
     runIgnoreHandler(this.registerHandler());
@@ -22,12 +22,15 @@ export class Terminal {
       if (res === null) {
         return;
       }
-      const value = String(res).charCodeAt(0);
-      if (inputControl.nextCallback) {
-        inputControl.nextCallback(value);
-        inputControl.nextCallback = undefined;
-      } else {
-        inputControl.buffer.push(value);
+      console.error(`res ${res.length} ${res}`);
+      for (let i = 0; i < res.length; i++) {
+        const value = String(res).charCodeAt(i);
+        if (inputControl.nextCallback) {
+          inputControl.nextCallback(value);
+          inputControl.nextCallback = undefined;
+        } else {
+          inputControl.buffer.push(value);
+        }
       }
     }
   };
