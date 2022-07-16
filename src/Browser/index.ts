@@ -1,5 +1,4 @@
 import { Page } from "puppeteer";
-import terminfo from "terminfo";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
 import { constructUITree } from "../UITree/index.js";
@@ -36,9 +35,7 @@ export async function browserMain(
   }
   const uit = constructUITree(rootNode);
 
-  const trm = terminfo();
-
-  let [columns, rows] = tty.getWindowSize();
+  let [, rows] = tty.getWindowSize();
 
   // Enter alternate screen
   enterAlternateScreen(tty);
@@ -85,7 +82,7 @@ export async function browserMain(
           await renderFrame();
         }
       } else if (event.type === "resize") {
-        [columns, rows] = tty.getWindowSize();
+        [, rows] = tty.getWindowSize();
         await renderFrame();
       }
     }
