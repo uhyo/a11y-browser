@@ -21,6 +21,7 @@
   "dependencies": {
     "arg": "^5.0.2",
     "chalk": "^5.0.1",
-    "puppeteer": "^15.3.0"
+    "puppeteer": "^15.3.0",
+    "terminfo": "^0.1.1"
   }
 }

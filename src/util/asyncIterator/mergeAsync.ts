@@ -1,10 +1,13 @@
+type AsyncIteratorValue<I> = I extends AsyncIterator<infer T> ? T : never;
+
 export function mergeAsync<
   Is extends readonly AsyncIterableIterator<unknown>[]
->(...iterators: Is): AsyncIterableIterator<Is[number]> {
+>(...iterators: Is): AsyncIterableIterator<AsyncIteratorValue<Is[number]>> {
+  type Item = AsyncIteratorValue<Is[number]>;
   type InternalData =
     | {
         type: "data";
-        value: Is[number];
+        value: Item;
       }
     | {
         type: "return";
@@ -24,7 +27,7 @@ export function mergeAsync<
       for await (const value of iter) {
         emit({
           type: "data",
-          value: value as Is[number],
+          value: value as Item,
         });
       }
       doneCount++;

@@ -28,7 +28,7 @@ async function main() {
   try {
     const page = await browser.newPage();
     await page.goto(url);
-    if (args["--snapshot"]) {
+    if (args["--snapshot"] || !process.stdout.isTTY) {
       const cdp = await page.target().createCDPSession();
       await cdp.send("Accessibility.enable");
       const tree = await cdp.send("Accessibility.getFullAXTree");
@@ -45,7 +45,7 @@ async function main() {
       }
       return;
     } else {
-      await browserMain(page);
+      await browserMain(page, process.stdout);
     }
   } finally {
     await browser.close();
