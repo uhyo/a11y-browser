@@ -8,8 +8,9 @@ import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
 import { registerCursorPositionQuery } from "./cursorPositionQuery.js";
 import { handleKeyInput } from "./handleKeyInput.js";
-import { getKeyInputStream } from "./keyInputStream.js";
-import { getResizeEventStream } from "./resizeEventStream.js";
+import { getAXNodeUpdateStream } from "./streams/AXNodeUpdateStream.js";
+import { getKeyInputStream } from "./streams/keyInputStream.js";
+import { getResizeEventStream } from "./streams/resizeEventStream.js";
 import {
   enterAlternateScreen,
   exitAlternateScreen,
@@ -53,42 +54,63 @@ export async function browserMain(
   terminal.start();
   const [rawKeyInput, cleanup] = getKeyInputStream(terminal);
   const [rawResize, cleanup2] = getResizeEventStream(tty);
-  const keyInput = mapAsync(
-    rawKeyInput,
-    (input) =>
-      ({
-        type: "input",
-        input,
-      } as const)
-  );
-  const resize = mapAsync(
-    rawResize,
-    () =>
-      ({
-        type: "resize",
-      } as const)
+  const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(cdp);
+  const eventsStream = mergeAsync(
+    mapAsync(
+      rawKeyInput,
+      (input) =>
+        ({
+          type: "input",
+          input,
+        } as const)
+    ),
+    mapAsync(
+      rawResize,
+      () =>
+        ({
+          type: "resize",
+        } as const)
+    ),
+    mapAsync(
+      rawAXNodeUpdate,
+      (nodes) =>
+        ({
+          type: "AXNodeUpdate",
+          nodes,
+        } as const)
+    )
   );
   try {
     await renderFrame();
-    for await (const event of mergeAsync(keyInput, resize)) {
-      if (event.type === "input") {
-        if (event.input.type === "raw") {
-          if (event.input.value === 0 || event.input.value === 3) {
-            // 3 means Ctrl-C
-            break;
+    mainLoop: for await (const event of eventsStream) {
+      switch (event.type) {
+        case "input": {
+          if (event.input.type === "raw") {
+            if (event.input.value === 0 || event.input.value === 3) {
+              // 3 means Ctrl-C
+              break mainLoop;
+            }
+          } else if (handleKeyInput(state, event.input)) {
+            // update the screen
+            await renderFrame();
           }
-        } else if (handleKeyInput(state, event.input)) {
-          // update the screen
-          await renderFrame();
+          break;
         }
-      } else if (event.type === "resize") {
-        [, rows] = tty.getWindowSize();
-        await renderFrame();
+        case "resize": {
+          [, rows] = tty.getWindowSize();
+          await renderFrame();
+          break;
+        }
+        case "AXNodeUpdate": {
+          console.error("AXNodeUpdate");
+          break;
+        }
       }
     }
   } finally {
     cleanup();
     cleanup2();
+    cleanup3();
     terminal.destroy();
   }
 
