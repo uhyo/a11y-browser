@@ -40,7 +40,7 @@ export async function browserMain(
   // Enter alternate screen
   enterAlternateScreen(tty);
   // Set scroll region
-  setScrollRegion(tty, 0, 0);
+  setScrollRegion(tty, 0, rows + 100);
   setCursorPosition(tty, 0, 0);
   process.on("exit", () => {
     exitAlternateScreen(tty);
@@ -94,8 +94,8 @@ export async function browserMain(
     for (const line of splitByLines(render(uit))) {
       tty.write(line);
       const { row: currentRow } = await query();
-      if (currentRow >= rows - 1) {
-        tty.write(`${currentRow} / ${rows}\n`);
+      if (currentRow >= rows) {
+        tty.write(`${currentRow} / ${rows}`);
         break;
       }
     }

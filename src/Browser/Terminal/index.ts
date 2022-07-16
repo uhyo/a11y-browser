@@ -33,6 +33,20 @@ export class Terminal {
         chunks.push(...parsed.value);
       }
       for (const chunk of chunks) {
+        if (chunk.type === "escape-sequence") {
+          console.error(
+            "esc",
+            chunk.sequence
+              .map((value) =>
+                0x20 < value && value < 0x7f
+                  ? String.fromCharCode(value)
+                  : value.toString(16)
+              )
+              .join(" ")
+          );
+        } else {
+          console.error("raw", chunk.value);
+        }
         for (const control of this.#inputControls) {
           const mapped = control.filterMap(chunk);
           if (mapped === undefined) {
