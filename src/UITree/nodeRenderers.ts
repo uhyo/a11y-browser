@@ -1,6 +1,7 @@
 import { Protocol } from "devtools-protocol";
 import { AXNode } from "../AccessibilityTree/AccessibilityNode.js";
 import { mapIterator } from "../util/iterator/mapIterator.js";
+import { addNewLineToEnd } from "../util/textIterator/addNewLineToEnd.js";
 import { ParentRenderer, StandaloneRenderer } from "./UINode.js";
 
 export const genericInline: ParentRenderer = function* (
@@ -27,7 +28,7 @@ export const genericBlock: ParentRenderer = function* (
   if (name) {
     yield context.theme.supplemental(`(${name})`) + "\n";
   }
-  yield* child;
+  yield* addNewLineToEnd(child);
 };
 
 export const genericHeader: StandaloneRenderer = (context, rawNode) => {
@@ -60,10 +61,14 @@ export const headingHeader: StandaloneRenderer = (context, rawNode) => {
 };
 
 export const linkInline: ParentRenderer = function* (context, rawNode, child) {
-  const name = getName(rawNode);
-  yield context.theme.link(`<Link:${maybeUndefinedAnd(name?.trim())}`);
-  yield* mapIterator(child, context.theme.link);
-  yield context.theme.link(">");
+  const name = getName(rawNode)?.trim();
+  if (name) {
+    yield context.theme.link(`<Link: ${name}>`);
+  } else {
+    yield context.theme.link("<Link: ");
+    yield* mapIterator(child, context.theme.link);
+    yield context.theme.link(">");
+  }
 };
 
 export const linkHeader: StandaloneRenderer = (context, rawNode) => {
@@ -76,12 +81,14 @@ export const buttonInline: ParentRenderer = function* (
   rawNode,
   child
 ) {
-  const name = getName(rawNode);
-  yield context.theme.button(
-    `[Button${maybeUndefinedAnd(name?.trim(), "(", ")")}`
-  );
-  yield* mapIterator(child, context.theme.button);
-  yield context.theme.button("]");
+  const name = getName(rawNode)?.trim();
+  if (name) {
+    yield context.theme.button(`[Button(${name})]`);
+  } else {
+    yield context.theme.button("[Button: ");
+    yield* mapIterator(child, context.theme.button);
+    yield context.theme.button("]");
+  }
 };
 
 export const imageInline: ParentRenderer = function* (context, rawNode) {
@@ -99,9 +106,13 @@ export const comboBoxInline: ParentRenderer = function* (
   child
 ) {
   const name = getName(rawNode)?.trim();
-  yield context.theme.button(`[Input${maybeUndefinedAnd(name, "(", ")")}`);
-  yield* mapIterator(child, context.theme.button);
-  yield context.theme.button("]");
+  if (name) {
+    yield context.theme.button(`[Input(${name})]`);
+  } else {
+    yield context.theme.button("[Input: ");
+    yield* mapIterator(child, context.theme.button);
+    yield context.theme.button("]");
+  }
 };
 
 export const listHeader: StandaloneRenderer = (context, rawNode) => {

@@ -1,4 +1,5 @@
 import { UINode } from "../UITree/UINode.js";
+import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { createDefaultContext, RenderContext } from "./RenderContext.js";
 
 /**
@@ -66,8 +67,8 @@ function* renderBlockChildren(
   indent: string = ""
 ): IterableIterator<string> {
   for (const node of nodes) {
-    for (const chunk of render(node, context)) {
-      yield indent + chunk + "\n";
+    for (const line of splitByLines(render(node, context))) {
+      yield indent + line;
     }
   }
 }
