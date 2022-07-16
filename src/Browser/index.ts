@@ -53,10 +53,10 @@ export async function browserMain(
   const [rawResize, cleanup2] = getResizeEventStream(tty);
   const keyInput = mapAsync(
     rawKeyInput,
-    (key) =>
+    (input) =>
       ({
-        type: "key",
-        key,
+        type: "input",
+        input,
       } as const)
   );
   const resize = mapAsync(
@@ -69,10 +69,12 @@ export async function browserMain(
   try {
     await renderFrame();
     for await (const event of mergeAsync(keyInput, resize)) {
-      if (event.type === "key") {
-        if (event.key === 0 || event.key === 3) {
-          // 3 means Ctrl-C
-          break;
+      if (event.type === "input") {
+        if (event.input.type === "raw") {
+          if (event.input.value === 0 || event.input.value === 3) {
+            // 3 means Ctrl-C
+            break;
+          }
         }
       } else if (event.type === "resize") {
         [columns, rows] = tty.getWindowSize();

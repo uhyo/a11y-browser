@@ -1,81 +1,98 @@
-import { InputHandlerMethods, runIgnoreHandler } from "./inputHandler.js";
-import { Stack } from "./Stack.js";
+import { InputChunk, parseInputChunks } from "./inputChunkParser.js";
+import { InputHandlerMethods, RegisterHandlerOptions } from "./inputHandler.js";
 
 export class Terminal {
+  /**
+   * Currently registered input receivers.
+   * Earlier receiver has higher priority.
+   */
+  #inputControls: InputReceiver<any>[] = [];
+  #inputChunkParser: ReturnType<typeof parseInputChunks>;
+
   constructor(
     readonly output: NodeJS.WriteStream,
     private readonly input: NodeJS.ReadStream
   ) {
-    runIgnoreHandler(this.registerHandler());
+    this.#inputChunkParser = parseInputChunks();
+    this.#inputChunkParser.next();
   }
 
-  #inputControl: InputControl | undefined;
-  #nextInputHandlerId = 1;
-  #activeInputHandlerStack = new Stack<number>();
   #readableListener = () => {
-    const inputControl = this.#inputControl;
-    if (inputControl === undefined) {
-      return;
-    }
     while (true) {
       const res = process.stdin.read();
       if (res === null) {
         return;
       }
-      console.error(`res ${res.length} ${res}`);
+      const chunks: InputChunk[] = [];
       for (let i = 0; i < res.length; i++) {
         const value = String(res).charCodeAt(i);
-        if (inputControl.nextCallback) {
-          inputControl.nextCallback(value);
-          inputControl.nextCallback = undefined;
-        } else {
-          inputControl.buffer.push(value);
+        const parsed = this.#inputChunkParser.next(value);
+        if (parsed.done) {
+          throw new Error("Unexpected end of input");
+        }
+        chunks.push(...parsed.value);
+      }
+      for (const chunk of chunks) {
+        for (const control of this.#inputControls) {
+          const mapped = control.filterMap(chunk);
+          if (mapped === undefined) {
+            continue;
+          }
+          if (control.nextCallback) {
+            control.nextCallback(mapped);
+            control.nextCallback = undefined;
+          } else {
+            control.buffer.push(chunk);
+          }
+          break;
         }
       }
     }
   };
   #endListener = () => {
-    const inputControl = this.#inputControl;
-    if (inputControl === undefined) {
-      return;
-    }
-    if (inputControl.nextCallback) {
-      inputControl.nextCallback(0);
-      inputControl.nextCallback = undefined;
-    } else {
-      inputControl.buffer.push(0);
+    for (const control of this.#inputControls) {
+      if (control.nextCallback) {
+        control.nextCallback({
+          type: "raw",
+          value: 0,
+        });
+        control.nextCallback = undefined;
+      } else {
+        control.buffer.push({
+          type: "raw",
+          value: 0,
+        });
+      }
     }
   };
   #errorListener = (error: unknown) => {
-    const inputControl = this.#inputControl;
-    if (inputControl === undefined) {
-      return;
-    }
-    if (inputControl.storedError === undefined) {
-      inputControl.storedError = error;
-    }
-    if (inputControl.nextCallback) {
-      inputControl.nextCallback(0);
-      inputControl.nextCallback = undefined;
+    for (const control of this.#inputControls) {
+      if (control.storedError === undefined) {
+        control.storedError = error;
+      }
+      if (control.nextCallback) {
+        control.nextCallback({
+          type: "raw",
+          value: 0,
+        });
+        control.nextCallback = undefined;
+      }
     }
   };
 
-  public registerHandler(): InputHandlerMethods {
-    const handlerId = this.#nextInputHandlerId++;
-    const pull = async (): Promise<number> => {
-      while (this.#activeInputHandlerStack.peek() !== handlerId) {
-        // This isn't my turn to read.
-        await new Promise<void>((resolve) => {
-          this.#activeInputHandlerStack.notifyOnChange(resolve);
-        });
-      }
-      const inputControl = this.#inputControl;
-      if (inputControl === undefined) {
-        return 0;
-      }
-      const data = inputControl.buffer.shift();
-      if (data !== undefined) {
-        return data;
+  public registerHandler<T>({
+    filterMap,
+  }: RegisterHandlerOptions<T>): InputHandlerMethods<T> {
+    const inputControl: InputReceiver<T> = {
+      filterMap,
+      buffer: [],
+      nextCallback: undefined,
+      storedError: undefined,
+    };
+    const pull = async (): Promise<T> => {
+      const chunk = inputControl.buffer.shift();
+      if (chunk !== undefined) {
+        return chunk;
       }
       return new Promise((resolve, reject) => {
         inputControl.nextCallback = (value) => {
@@ -87,10 +104,12 @@ export class Terminal {
         };
       });
     };
+    this.#inputControls.unshift(inputControl);
     const cleanup = () => {
-      this.#activeInputHandlerStack.pop();
+      this.#inputControls = this.#inputControls.filter(
+        (control) => control !== inputControl
+      );
     };
-    this.#activeInputHandlerStack.push(handlerId);
     return {
       pull,
       cleanup,
@@ -99,11 +118,6 @@ export class Terminal {
 
   public start() {
     this.input.setRawMode(true);
-    this.#inputControl = {
-      buffer: [],
-      nextCallback: undefined,
-      storedError: undefined,
-    };
     this.input.on("readable", this.#readableListener);
     this.input.on("end", this.#endListener);
     this.input.on("error", this.#errorListener);
@@ -111,22 +125,25 @@ export class Terminal {
 
   public destroy() {
     this.input.setRawMode(false);
-    this.#inputControl = undefined;
     this.input.removeListener("readable", this.#readableListener);
     this.input.removeListener("end", this.#endListener);
     this.input.removeListener("error", this.#errorListener);
   }
 }
 
-type InputControl = {
+type InputReceiver<T> = {
+  /**
+   * Checks whether this handler receives given chunk.
+   */
+  filterMap: (chunk: InputChunk) => T | undefined;
   /**
    * Buffer of input key codes.
    */
-  buffer: number[];
+  buffer: T[];
   /**
    * Function to call when a key is pressed.
    */
-  nextCallback: ((data: number) => void) | undefined;
+  nextCallback: ((data: T) => void) | undefined;
   /**
    * Error that occurred during reading.
    */

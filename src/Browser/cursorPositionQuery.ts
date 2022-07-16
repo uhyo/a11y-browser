@@ -8,13 +8,21 @@ type CursorPositionQuery = {
 export function registerCursorPositionQuery(
   terminal: Terminal
 ): CursorPositionQuery {
-  const { pull, cleanup } = terminal.registerHandler();
+  const { pull, cleanup } = terminal.registerHandler({
+    filterMap(chunk) {
+      if (chunk.type !== "escape-sequence") {
+        return;
+      }
+      // Check if this is a DSR response.
+      return parseDSRResponse(chunk.sequence);
+    },
+  });
 
   const query = () => {
     // Device Status Report (DSR)
     terminal.output.write(`\x1b[6n`);
     // Wait for the response.
-    return parseDSRResponse(pull);
+    return pull();
   };
 
   return {
@@ -23,35 +31,31 @@ export function registerCursorPositionQuery(
   };
 }
 
-async function parseDSRResponse(pull: () => Promise<number>) {
+function parseDSRResponse(escapeSequence: readonly number[]) {
   // ESC [
-  assert(await pull(), 0x1b);
-  assert(await pull(), 0x5b);
+  let index = 2;
   // Cursor Position (CPR)
-  const [row, next] = await parseNumber();
+  const row = parseNumber();
   // separator (;)
-  assert(next, 0x3b);
-  const [col, next2] = await parseNumber();
+  if (escapeSequence[index++] !== 0x3b) {
+    return;
+  }
+  const col = parseNumber();
   // end of sequence (R)
-  assert(next2, 0x52);
+  if (escapeSequence[index++] !== 0x52) {
+    return;
+  }
   return { row, col };
 
-  async function parseNumber() {
+  function parseNumber() {
     let value = 0;
     while (true) {
-      const next = await pull();
+      const next = escapeSequence[index] ?? 0;
       if (next < 0x30 || next > 0x39) {
-        return [value, next] as const;
+        return value;
       }
       value = value * 10 + next - 0x30;
-    }
-  }
-
-  function assert(actual: number, expected: number) {
-    if (actual !== expected) {
-      throw new Error(
-        `Unexpected response from terminal during DSR. Expected ${expected}, got ${actual}`
-      );
+      index++;
     }
   }
 }

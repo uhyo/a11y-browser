@@ -1,9 +1,12 @@
 import { Terminal } from "./Terminal/index.js";
+import { InputChunk } from "./Terminal/inputChunkParser.js";
 
 export function getKeyInputStream(terminal: Terminal) {
-  const { pull, cleanup } = terminal.registerHandler();
+  const { pull, cleanup } = terminal.registerHandler({
+    filterMap: (chunk) => chunk,
+  });
 
-  const iterator: AsyncIterableIterator<number> = {
+  const iterator: AsyncIterableIterator<InputChunk> = {
     [Symbol.asyncIterator]() {
       return this;
     },
