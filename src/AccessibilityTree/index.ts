@@ -27,10 +27,8 @@ export class AccessibilityTree {
     const res = await this.#cdp.send("Accessibility.getRootAXNode");
 
     const nodes = await asyncIteratorToArray(
-      filterMapAsync(
-      recurse(this.#cdp, res.node),
-      x => x
-      );
+      filterMapAsync(recurse(this.#cdp, res.node), (x) => x)
+    );
 
     // console.log(inspect(nodes, { depth: 10 }));
     convert(joinIterables([res.node], nodes), this.#nodes);
