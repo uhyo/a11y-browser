@@ -1,3 +1,4 @@
+import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
 import { inspect } from "util";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
@@ -28,7 +29,10 @@ export async function browserMain(
 ): Promise<void> {
   const cdp = await page.target().createCDPSession();
   const acc = new AccessibilityTree(cdp);
+  const startTime = performance.now();
   await acc.initialize();
+  const endTime = performance.now();
+  console.error("initialize", endTime - startTime, "ms");
   const rootNode = acc.rootNode;
   if (!rootNode) {
     throw new Error("Root node not found");

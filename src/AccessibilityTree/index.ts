@@ -1,5 +1,6 @@
 import { CDPSession } from "puppeteer";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
+import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
 import { joinIterables } from "../util/iterator/joinIterables.js";
 import { AccessibilityNode } from "./AccessibilityNode.js";
 import { convert } from "./convert.js";
@@ -25,7 +26,11 @@ export class AccessibilityTree {
     await this.#cdp.send("Accessibility.enable");
     const res = await this.#cdp.send("Accessibility.getRootAXNode");
 
-    const nodes = await asyncIteratorToArray(recurse(this.#cdp, res.node));
+    const nodes = await asyncIteratorToArray(
+      filterMapAsync(
+      recurse(this.#cdp, res.node),
+      x => x
+      );
 
     // console.log(inspect(nodes, { depth: 10 }));
     convert(joinIterables([res.node], nodes), this.#nodes);
