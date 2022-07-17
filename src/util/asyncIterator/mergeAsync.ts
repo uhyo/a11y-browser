@@ -1,8 +1,8 @@
 type AsyncIteratorValue<I> = I extends AsyncIterator<infer T> ? T : never;
 
-export function mergeAsync<
-  Is extends readonly AsyncIterableIterator<unknown>[]
->(...iterators: Is): AsyncIterableIterator<AsyncIteratorValue<Is[number]>> {
+export function mergeAsync<Is extends readonly AsyncIterable<unknown>[]>(
+  ...iterators: Is
+): AsyncIterableIterator<AsyncIteratorValue<Is[number]>> {
   type Item = AsyncIteratorValue<Is[number]>;
   type InternalData =
     | {

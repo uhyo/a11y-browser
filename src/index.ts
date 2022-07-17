@@ -32,9 +32,9 @@ async function main() {
       const cdp = await page.target().createCDPSession();
       await cdp.send("Accessibility.enable");
       const tree = await cdp.send("Accessibility.getFullAXTree");
-      const acc = new AccessibilityTree();
-      acc.initialize(tree.nodes);
-      const rootNode = acc.getById(tree.nodes[0]?.nodeId || "0");
+      const acc = new AccessibilityTree(cdp);
+      await acc.initialize();
+      const rootNode = acc.rootNode;
       if (!rootNode) {
         throw new Error("Root node not found");
       }

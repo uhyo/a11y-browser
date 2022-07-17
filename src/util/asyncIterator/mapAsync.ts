@@ -1,5 +1,5 @@
 export async function* mapAsync<T, U>(
-  iterator: AsyncIterableIterator<T>,
+  iterator: AsyncIterable<T>,
   mapper: (value: T) => U | Promise<U>
 ): AsyncIterableIterator<U> {
   for await (const value of iterator) {

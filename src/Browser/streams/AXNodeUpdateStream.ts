@@ -13,13 +13,13 @@ export function getAXNodeUpdateStream(
     ev.emit("update", event.nodes);
   };
   const abortController = new AbortController();
-  cdp.on("Accessibility.AXNodeUpdated", handler);
+  cdp.on("Accessibility.nodesUpdated", handler);
   const cleanup = () => {
-    cdp.off("Accessibility.AXNodeUpdated", handler);
+    cdp.off("Accessibility.nodesUpdated", handler);
     abortController.abort();
   };
   return [
-    on(ev, "data", {
+    on(ev, "update", {
       signal: abortController.signal,
     }),
     cleanup,

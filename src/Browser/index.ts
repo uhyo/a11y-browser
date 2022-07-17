@@ -1,4 +1,5 @@
 import { Page } from "puppeteer";
+import { inspect } from "util";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
 import { constructUITree } from "../UITree/index.js";
@@ -6,8 +7,8 @@ import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
+import { mapInputToCommand } from "./commands.js";
 import { registerCursorPositionQuery } from "./cursorPositionQuery.js";
-import { handleKeyInput } from "./handleKeyInput.js";
 import { getAXNodeUpdateStream } from "./streams/AXNodeUpdateStream.js";
 import { getKeyInputStream } from "./streams/keyInputStream.js";
 import { getResizeEventStream } from "./streams/resizeEventStream.js";
@@ -26,11 +27,9 @@ export async function browserMain(
   tty: NodeJS.WriteStream
 ): Promise<void> {
   const cdp = await page.target().createCDPSession();
-  await cdp.send("Accessibility.enable");
-  const tree = await cdp.send("Accessibility.getFullAXTree");
-  const acc = new AccessibilityTree();
-  acc.initialize(tree.nodes);
-  const rootNode = acc.getById(tree.nodes[0]?.nodeId || "0");
+  const acc = new AccessibilityTree(cdp);
+  await acc.initialize();
+  const rootNode = acc.rootNode;
   if (!rootNode) {
     throw new Error("Root node not found");
   }
@@ -57,11 +56,11 @@ export async function browserMain(
   const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(cdp);
   const eventsStream = mergeAsync(
     mapAsync(
-      rawKeyInput,
-      (input) =>
+      mapInputToCommand(rawKeyInput),
+      (command) =>
         ({
-          type: "input",
-          input,
+          type: "command",
+          command,
         } as const)
     ),
     mapAsync(
@@ -84,15 +83,32 @@ export async function browserMain(
     await renderFrame();
     mainLoop: for await (const event of eventsStream) {
       switch (event.type) {
-        case "input": {
-          if (event.input.type === "raw") {
-            if (event.input.value === 0 || event.input.value === 3) {
-              // 3 means Ctrl-C
+        case "command": {
+          const { command } = event;
+          switch (command) {
+            case "quit": {
               break mainLoop;
             }
-          } else if (handleKeyInput(state, event.input)) {
-            // update the screen
-            await renderFrame();
+            case "scrollDown": {
+              state.scrollY++;
+              await renderFrame();
+              break;
+            }
+            case "scrollUp": {
+              state.scrollY--;
+              await renderFrame();
+              break;
+            }
+            case "tabBackward": {
+              page.keyboard.down("Shift");
+              page.keyboard.press("Tab");
+              page.keyboard.up("Shift");
+              break;
+            }
+            case "tabForward": {
+              page.keyboard.press("Tab");
+              break;
+            }
           }
           break;
         }
@@ -102,7 +118,7 @@ export async function browserMain(
           break;
         }
         case "AXNodeUpdate": {
-          console.error("AXNodeUpdate");
+          console.error("AXNodeUpdate", inspect(event.nodes, { depth: 10 }));
           break;
         }
       }
@@ -112,6 +128,7 @@ export async function browserMain(
     cleanup2();
     cleanup3();
     terminal.destroy();
+    await acc.dispose();
   }
 
   async function renderFrame() {
