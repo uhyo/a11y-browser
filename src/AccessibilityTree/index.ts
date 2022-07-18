@@ -1,3 +1,5 @@
+import Protocol from "devtools-protocol";
+import EventEmitter from "events";
 import { CDPSession } from "puppeteer";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
@@ -5,6 +7,7 @@ import { joinIterables } from "../util/iterator/joinIterables.js";
 import { AccessibilityNode } from "./AccessibilityNode.js";
 import { convert } from "./convert.js";
 import { recurse } from "./recurse.js";
+import { update } from "./update.js";
 
 /**
  * Mutable tree of accessibility nodes.
@@ -14,9 +17,27 @@ export class AccessibilityTree {
   #cdp: CDPSession;
   #rootNode: AccessibilityNode | undefined;
 
+  readonly updatedEvent = new EventEmitter();
+
   constructor(cdp: CDPSession) {
     this.#cdp = cdp;
   }
+
+  #nodeUpdateHandler = ({
+    nodes,
+  }: Protocol.Protocol.Accessibility.NodesUpdatedEvent): void => {
+    const rootNodeId = this.#rootNode?.id;
+    if (rootNodeId === undefined) {
+      throw new Error("Root node not found");
+    }
+    update(this.#cdp, this.#nodes, nodes).then(
+      () => {
+        this.#rootNode = this.#nodes.get(rootNodeId);
+        this.updatedEvent.emit("update", this.#nodes);
+      },
+      (err) => this.updatedEvent.emit("error", err)
+    );
+  };
 
   /**
    * Constructs an accessibility tree by communicating with the browser.
@@ -34,10 +55,12 @@ export class AccessibilityTree {
     convert(joinIterables([res.node], nodes), this.#nodes);
     this.#rootNode = this.#nodes.get(res.node.nodeId);
 
+    this.#cdp.on("Accessibility.nodesUpdated", this.#nodeUpdateHandler);
     // process.exit(0);
   }
 
   public async dispose(): Promise<void> {
+    this.#cdp.off("Accessibility.nodesUpdated", this.#nodeUpdateHandler);
     await this.#cdp.send("Accessibility.disable");
     this.#nodes.clear();
   }

@@ -1,25 +1,15 @@
-import Protocol from "devtools-protocol";
-import { EventEmitter, on } from "events";
-import { CDPSession } from "puppeteer";
-import { AXNode } from "../../AccessibilityTree/AccessibilityNode.js";
+import { on } from "events";
+import { AccessibilityTree } from "../../AccessibilityTree/index.js";
 
 export function getAXNodeUpdateStream(
-  cdp: CDPSession
-): [AsyncIterableIterator<AXNode[]>, () => void] {
-  const ev = new EventEmitter();
-  const handler = (
-    event: Protocol.Protocol.Accessibility.NodesUpdatedEvent
-  ) => {
-    ev.emit("update", event.nodes);
-  };
+  tree: AccessibilityTree
+): [AsyncIterableIterator<void>, () => void] {
   const abortController = new AbortController();
-  cdp.on("Accessibility.nodesUpdated", handler);
   const cleanup = () => {
-    cdp.off("Accessibility.nodesUpdated", handler);
     abortController.abort();
   };
   return [
-    on(ev, "update", {
+    on(tree.updatedEvent, "update", {
       signal: abortController.signal,
     }),
     cleanup,

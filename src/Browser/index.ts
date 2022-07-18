@@ -4,6 +4,7 @@ import { inspect } from "util";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
 import { constructUITree } from "../UITree/index.js";
+import { UINode } from "../UITree/UINode.js";
 import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { splitByLines } from "../util/textIterator/splitByLines.js";
@@ -33,11 +34,7 @@ export async function browserMain(
   await acc.initialize();
   const endTime = performance.now();
   console.error("initialize", endTime - startTime, "ms");
-  const rootNode = acc.rootNode;
-  if (!rootNode) {
-    throw new Error("Root node not found");
-  }
-  const uit = constructUITree(rootNode);
+  let uit = getUINode(acc);
 
   let [, rows] = tty.getWindowSize();
 
@@ -57,7 +54,7 @@ export async function browserMain(
   terminal.start();
   const [rawKeyInput, cleanup] = getKeyInputStream(terminal);
   const [rawResize, cleanup2] = getResizeEventStream(tty);
-  const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(cdp);
+  const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(acc);
   const eventsStream = mergeAsync(
     mapAsync(
       mapInputToCommand(rawKeyInput),
@@ -76,10 +73,9 @@ export async function browserMain(
     ),
     mapAsync(
       rawAXNodeUpdate,
-      (nodes) =>
+      () =>
         ({
-          type: "AXNodeUpdate",
-          nodes,
+          type: "uiupdate",
         } as const)
     )
   );
@@ -121,8 +117,12 @@ export async function browserMain(
           await renderFrame();
           break;
         }
-        case "AXNodeUpdate": {
-          console.error("AXNodeUpdate", inspect(event.nodes, { depth: 10 }));
+        case "uiupdate": {
+          console.error("update!");
+          console.error(inspect(acc.rootNode, { depth: 20 }));
+          uit = getUINode(acc);
+          await renderFrame();
+          console.error(inspect(uit, { depth: 20 }));
           break;
         }
       }
@@ -161,10 +161,20 @@ export async function browserMain(
         break;
       }
     }
+    // clear to the bottom of the screen
+    tty.write("\x1b[0J");
 
     setCursorPosition(tty, rows - 1, 0);
     tty.write("\x1b[KLAST LINE");
 
     cleanup();
   }
+}
+
+function getUINode(acc: AccessibilityTree): UINode {
+  const rootNode = acc.rootNode;
+  if (!rootNode) {
+    throw new Error("Root node not found");
+  }
+  return constructUITree(rootNode);
 }
