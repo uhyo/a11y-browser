@@ -1,6 +1,5 @@
 import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
-import { inspect } from "util";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
 import { constructUITree } from "../UITree/index.js";
@@ -12,6 +11,7 @@ import { createDefaultBrowserState } from "./BrowserState.js";
 import { mapInputToCommand } from "./commands.js";
 import { registerCursorPositionQuery } from "./cursorPositionQuery.js";
 import { getAXNodeUpdateStream } from "./streams/AXNodeUpdateStream.js";
+import { getBrowserEventStream } from "./streams/getBrowserEventStream.js";
 import { getKeyInputStream } from "./streams/keyInputStream.js";
 import { getResizeEventStream } from "./streams/resizeEventStream.js";
 import {
@@ -56,6 +56,7 @@ export async function browserMain(
   const [rawKeyInput, cleanup] = getKeyInputStream(terminal);
   const [rawResize, cleanup2] = getResizeEventStream(tty);
   const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(acc);
+  const [rowBrowserEvent, cleanup4] = getBrowserEventStream(page);
   const eventsStream = mergeAsync(
     mapAsync(
       mapInputToCommand(state, rawKeyInput),
@@ -77,6 +78,13 @@ export async function browserMain(
       () =>
         ({
           type: "uiupdate",
+        } as const)
+    ),
+    mapAsync(
+      rowBrowserEvent,
+      () =>
+        ({
+          type: "domcontentloaded",
         } as const)
     )
   );
@@ -116,11 +124,17 @@ export async function browserMain(
           break;
         }
         case "uiupdate": {
-          console.error("update!");
-          console.error(inspect(acc.rootNode, { depth: 20 }));
+          // console.error("update!");
+          // console.error(inspect(acc.rootNode, { depth: 20 }));
           uit = getUINode(acc);
           await renderFrame();
-          console.error(inspect(uit, { depth: 20 }));
+          // console.error(inspect(uit, { depth: 20 }));
+          break;
+        }
+        case "domcontentloaded": {
+          // Scroll to the top
+          state.scrollY = 0;
+          await renderFrame();
           break;
         }
       }
@@ -163,7 +177,8 @@ export async function browserMain(
     tty.write("\x1b[0J");
 
     setCursorPosition(tty, rows - 1, 0);
-    tty.write("\x1b[KLAST LINE");
+    // tty.write("\x1b[KLAST LINE");
+    tty.write("\x1b[");
 
     cleanup();
   }

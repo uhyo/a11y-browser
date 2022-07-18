@@ -16,7 +16,7 @@ export async function update(
   nodeMap: Map<string, AccessibilityNode>,
   updates: readonly AXNode[]
 ): Promise<void> {
-  console.error(inspect(updates, { depth: 10 }));
+  console.error("AXNodes", inspect(updates, { depth: 10 }));
   const affectedParentIds = new Set<string>();
   const parentsWithLackedChildren: AXNode[] = [];
   for (const node of updates) {

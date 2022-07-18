@@ -35,7 +35,10 @@ export class AccessibilityTree {
         this.#rootNode = this.#nodes.get(rootNodeId);
         this.updatedEvent.emit("update", this.#nodes);
       },
-      (err) => this.updatedEvent.emit("error", err)
+      (err) => {
+        // Protocol error may happen when navigated during the update.
+        console.error(err);
+      }
     );
   };
 
