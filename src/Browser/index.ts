@@ -50,6 +50,7 @@ export async function browserMain(
   });
 
   const state = createDefaultBrowserState();
+  state.height = rows;
   const terminal = new Terminal(tty, process.stdin);
   terminal.start();
   const [rawKeyInput, cleanup] = getKeyInputStream(terminal);
@@ -57,7 +58,7 @@ export async function browserMain(
   const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(acc);
   const eventsStream = mergeAsync(
     mapAsync(
-      mapInputToCommand(rawKeyInput),
+      mapInputToCommand(state, rawKeyInput),
       (command) =>
         ({
           type: "command",
@@ -85,28 +86,24 @@ export async function browserMain(
       switch (event.type) {
         case "command": {
           const { command } = event;
-          switch (command) {
+          switch (command.type) {
             case "quit": {
               break mainLoop;
             }
-            case "scrollDown": {
-              state.scrollY++;
+            case "scroll": {
+              state.scrollY += command.amount;
               await renderFrame();
               break;
             }
-            case "scrollUp": {
-              state.scrollY--;
-              await renderFrame();
-              break;
-            }
-            case "tabBackward": {
-              page.keyboard.down("Shift");
-              page.keyboard.press("Tab");
-              page.keyboard.up("Shift");
-              break;
-            }
-            case "tabForward": {
-              page.keyboard.press("Tab");
+            case "key": {
+              const { key, modifiers = [] } = command;
+              for (const m of modifiers) {
+                page.keyboard.down(m);
+              }
+              page.keyboard.press(key);
+              for (const m of [...modifiers].reverse()) {
+                page.keyboard.up(m);
+              }
               break;
             }
           }
@@ -114,6 +111,7 @@ export async function browserMain(
         }
         case "resize": {
           [, rows] = tty.getWindowSize();
+          state.height = rows;
           await renderFrame();
           break;
         }
