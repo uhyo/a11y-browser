@@ -20,7 +20,14 @@ export function* render(
     case "wrapper": {
       const header = node.renderHeader(context, node.rawNode);
       if (header) {
-        yield header + "\n";
+        if (node.focused) {
+          yield context.theme.focused("[") +
+            header +
+            context.theme.focused("]") +
+            "\n";
+        } else {
+          yield header + "\n";
+        }
       }
       yield* renderBlockChildren(
         node.children,
@@ -41,14 +48,26 @@ export function* render(
     }
     case "listitem": {
       yield node.renderMarker(context, node.rawNode);
+      if (node.focused) {
+        yield context.theme.focused("[");
+      }
       yield* renderInlineChildren(node.children, context);
+      if (node.focused) {
+        yield context.theme.focused("]");
+      }
       yield "\n";
       context.shouldPrintBlockSeparator = true;
       break;
     }
     case "inline": {
       const children = renderInlineChildren(node.children, context);
+      if (node.focused) {
+        yield context.theme.focused("[");
+      }
       yield* node.render(context, node.rawNode, children);
+      if (node.focused) {
+        yield context.theme.focused("]");
+      }
       context.shouldPrintBlockSeparator = false;
       break;
     }

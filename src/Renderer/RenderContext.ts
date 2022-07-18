@@ -18,6 +18,7 @@ export function createDefaultContext(): RenderContext {
       image: chalk.yellowBright,
       structure: chalk.green,
       supplemental: chalk.gray,
+      focused: chalk.red.bold,
     },
     shouldPrintBlockSeparator: false,
   };

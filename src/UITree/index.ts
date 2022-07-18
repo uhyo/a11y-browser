@@ -7,6 +7,7 @@ import {
   genericHeader,
   genericIndent,
   genericInline,
+  getProperty,
   headingBlock,
   headingHeader,
   headingIndent,
@@ -21,7 +22,7 @@ import {
   regionIndent,
   textInline,
 } from "./nodeRenderers.js";
-import { InlineUINode, UINode } from "./UINode.js";
+import { InlineUINode, UINode, UINodeBase } from "./UINode.js";
 
 const emptyArray: readonly [] = [];
 
@@ -36,6 +37,7 @@ export function constructUITree(node: AccessibilityNode): UINode {
     type: "block",
     render: genericBlock,
     children,
+    focused: false,
   };
 }
 
@@ -46,25 +48,39 @@ function constructUITreeRec(node: AccessibilityNode): UINode[] {
   if (uiNode === undefined) {
     return children;
   }
-  Object.defineProperty(uiNode, "rawNode", {
-    value: node.rawNode,
-    writable: true,
-    enumerable: false,
-    configurable: true,
-  });
   switch (uiNode.type) {
     case "wrapper": {
       uiNode.children = getBlockList(uiNode.children);
       break;
     }
   }
-  return [uiNode];
+  Object.defineProperties(uiNode, {
+    focused: {
+      value: !!getProperty(node.rawNode, "focused", false),
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    },
+    rawNode: {
+      value: node.rawNode,
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    },
+  });
+  return [uiNode as UINode];
 }
+
+type UINodeWithoutBase = UINode extends infer U
+  ? U extends infer V
+    ? Omit<V, keyof UINodeBase>
+    : never
+  : never;
 
 function convertNode(
   node: AccessibilityNode,
   children: readonly UINode[]
-): UINode | undefined {
+): UINodeWithoutBase | undefined {
   const { rawNode, role } = node;
   if (rawNode.ignored) {
     return undefined;
@@ -224,6 +240,7 @@ function getBlockList(nodes: readonly UINode[]): UINode[] {
           type: "block",
           render: genericBlock,
           children: chunk,
+          focused: false,
         });
         chunk = [];
       }
@@ -235,6 +252,7 @@ function getBlockList(nodes: readonly UINode[]): UINode[] {
       type: "block",
       render: genericBlock,
       children: chunk,
+      focused: false,
     });
   }
   return result;

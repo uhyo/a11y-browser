@@ -25,4 +25,8 @@ export type RenderingTheme = {
    * Theme for supplemental information.
    */
   supplemental: Theme;
+  /**
+   * Theme for focused marker.
+   */
+  focused: Theme;
 };

@@ -11,7 +11,8 @@ export type ParentRenderer = (
   child: IterableIterator<string>
 ) => IterableIterator<string>;
 
-type UINodeBase = {
+export type UINodeBase = {
+  focused: boolean;
   rawNode?: AXNode;
 };
 
