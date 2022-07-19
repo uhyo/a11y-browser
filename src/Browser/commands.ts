@@ -52,10 +52,10 @@ export function mapInputToCommand(
           };
         }
         if (escapeSequenceEquals(chunk.sequence, pageDownSequence)) {
-          return { type: "scroll", amount: state.height };
+          return { type: "scroll", amount: state.rows };
         }
         if (escapeSequenceEquals(chunk.sequence, pageUpSequence)) {
-          return { type: "scroll", amount: -state.height };
+          return { type: "scroll", amount: -state.rows };
         }
       }
     }

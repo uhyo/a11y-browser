@@ -1,8 +1,12 @@
 export type BrowserState = {
   /**
-   * Height of the browser window.
+   * width of the terminal window.
    */
-  height: number;
+  columns: number;
+  /**
+   * Height of the terminal window.
+   */
+  rows: number;
   /**
    * Y offset of the screen.
    */
@@ -11,7 +15,8 @@ export type BrowserState = {
 
 export function createDefaultBrowserState(): BrowserState {
   return {
-    height: 0,
+    columns: 0,
+    rows: 0,
     scrollY: 0,
   };
 }

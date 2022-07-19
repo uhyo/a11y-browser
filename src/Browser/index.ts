@@ -6,10 +6,8 @@ import { constructUITree } from "../UITree/index.js";
 import { UINode } from "../UITree/UINode.js";
 import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
-import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
 import { mapInputToCommand } from "./commands.js";
-import { registerCursorPositionQuery } from "./cursorPositionQuery.js";
 import { getAXNodeUpdateStream } from "./streams/AXNodeUpdateStream.js";
 import { getBrowserEventStream } from "./streams/getBrowserEventStream.js";
 import { getKeyInputStream } from "./streams/keyInputStream.js";
@@ -23,6 +21,7 @@ import {
   setScrollRegion,
 } from "./terminal.js";
 import { Terminal } from "./Terminal/index.js";
+import { textWrap } from "./textWrap.js";
 
 export async function browserMain(
   page: Page,
@@ -36,7 +35,7 @@ export async function browserMain(
   console.error("initialize", endTime - startTime, "ms");
   let uit = getUINode(acc);
 
-  let [, rows] = tty.getWindowSize();
+  let [columns, rows] = tty.getWindowSize();
 
   // Enter alternate screen
   enterAlternateScreen(tty);
@@ -50,7 +49,8 @@ export async function browserMain(
   });
 
   const state = createDefaultBrowserState();
-  state.height = rows;
+  state.columns = columns;
+  state.rows = rows;
   const terminal = new Terminal(tty, process.stdin);
   terminal.start();
   const [rawKeyInput, cleanup] = getKeyInputStream(terminal);
@@ -118,8 +118,9 @@ export async function browserMain(
           break;
         }
         case "resize": {
-          [, rows] = tty.getWindowSize();
-          state.height = rows;
+          [columns, rows] = tty.getWindowSize();
+          state.columns = columns;
+          state.rows = rows;
           await renderFrame();
           break;
         }
@@ -148,39 +149,28 @@ export async function browserMain(
   }
 
   async function renderFrame() {
-    const { query, cleanup } = registerCursorPositionQuery(terminal);
-
-    let skipLines;
-    if (state.scrollY < 0) {
-      // Emulate negative scrolling
-      setCursorPosition(tty, -state.scrollY, 0);
-      // clear screen up to the top of the screen
-      tty.write("\x1b[1J");
-      skipLines = 0;
-    } else {
-      setCursorPosition(tty, 0, 0);
-      skipLines = state.scrollY;
-    }
-    for (const line of splitByLines(render(uit))) {
+    let skipLines = state.scrollY < 0 ? 0 : state.scrollY;
+    let screenBuffer = state.scrollY < 0 ? "\n".repeat(-state.scrollY) : "";
+    let screenBufferLines = Math.max(0, -state.scrollY);
+    for (const line of textWrap(render(uit), state.columns)) {
       if (skipLines > 0) {
         skipLines--;
         continue;
       }
-      // Clear before and after the line
-      tty.write("\x1b[K" + line + "\x1b[K\n");
-      const { row: currentRow } = await query();
-      if (currentRow >= rows) {
+      screenBuffer += line + "\n";
+      screenBufferLines++;
+      if (screenBufferLines >= state.rows - 1) {
         break;
       }
     }
+    setCursorPosition(tty, 0, 0);
     // clear to the bottom of the screen
     tty.write("\x1b[0J");
+    tty.write(screenBuffer);
 
     setCursorPosition(tty, rows - 1, 0);
     // tty.write("\x1b[KLAST LINE");
     tty.write("\x1b[");
-
-    cleanup();
   }
 }
 

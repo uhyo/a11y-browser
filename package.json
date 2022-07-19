@@ -14,6 +14,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.0.0",
+    "@types/wrap-ansi": "^8.0.1",
     "devtools-protocol": "^0.0.1019158",
     "prettier": "^2.7.1",
     "typescript": "^4.7.4"
@@ -22,6 +23,7 @@
     "arg": "^5.0.2",
     "chalk": "^5.0.1",
     "puppeteer": "^15.3.0",
-    "terminfo": "^0.1.1"
+    "terminfo": "^0.1.1",
+    "wrap-ansi": "^8.0.1"
   }
 }
