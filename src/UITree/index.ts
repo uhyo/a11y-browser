@@ -213,8 +213,8 @@ function convertNode(
       };
     }
     default: {
-      console.debug(`⚠️ Unknown role: ${role}`);
-      console.debug(inspect(rawNode, { depth: 10 }));
+      console.error(`⚠️ Unknown role: ${role}`);
+      console.error(inspect(rawNode, { depth: 10 }));
       return {
         type: "wrapper",
         renderHeader: genericHeader,
