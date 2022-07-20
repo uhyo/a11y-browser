@@ -8,6 +8,7 @@ import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
 import { mapInputToCommand } from "./commands.js";
+import { frameRenderer } from "./frameRenderer.js";
 import { getAXNodeUpdateStream } from "./streams/AXNodeUpdateStream.js";
 import { getBrowserEventStream } from "./streams/getBrowserEventStream.js";
 import { getKeyInputStream } from "./streams/keyInputStream.js";
@@ -21,7 +22,6 @@ import {
   setScrollRegion,
 } from "./terminal.js";
 import { Terminal } from "./Terminal/index.js";
-import { textWrap } from "./textWrap.js";
 
 export async function browserMain(
   page: Page,
@@ -152,7 +152,7 @@ export async function browserMain(
     let skipLines = state.scrollY < 0 ? 0 : state.scrollY;
     let screenBuffer = state.scrollY < 0 ? "\n".repeat(-state.scrollY) : "";
     let screenBufferLines = Math.max(0, -state.scrollY);
-    for (const line of textWrap(render(uit), state.columns)) {
+    for (const line of frameRenderer(render(uit), state.columns)) {
       if (skipLines > 0) {
         skipLines--;
         continue;

@@ -1,5 +1,6 @@
 import { UINode } from "../UITree/UINode.js";
 import { splitByLines } from "../util/textIterator/splitByLines.js";
+import { indentMarkerEnd, indentMarkerStart } from "./indentMarker.js";
 import { createDefaultContext, RenderContext } from "./RenderContext.js";
 
 /**
@@ -28,12 +29,16 @@ export function* render(
         } else {
           yield header + "\n";
         }
+        // Notify a start of indent
+        yield indentMarkerStart +
+          node.renderIndent(context, node.rawNode) +
+          "\n";
       }
-      yield* renderBlockChildren(
-        node.children,
-        context,
-        header ? node.renderIndent(context, node.rawNode) : ""
-      );
+      yield* renderBlockChildren(node.children, context);
+      if (header) {
+        // Notify an end of indent
+        yield indentMarkerEnd + "\n";
+      }
       context.shouldPrintBlockSeparator = true;
       break;
     }
@@ -92,12 +97,11 @@ function* renderInlineChildren(
 
 function* renderBlockChildren(
   nodes: readonly UINode[],
-  context: RenderContext,
-  indent: string = ""
+  context: RenderContext
 ): IterableIterator<string> {
   for (const node of nodes) {
     for (const line of splitByLines(render(node, context))) {
-      yield indent + line + "\n";
+      yield line + "\n";
     }
   }
 }

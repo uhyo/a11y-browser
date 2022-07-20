@@ -1,7 +1,7 @@
 export function* mapIterator<T, U>(
-  iterator: IterableIterator<T>,
+  iterator: Iterable<T>,
   mapper: (value: T) => U
-): IterableIterator<U> {
+): Generator<U> {
   for (const value of iterator) {
     yield mapper(value);
   }
