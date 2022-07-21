@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { UINode } from "../UITree/UINode.js";
 import { RenderingTheme } from "./RenderingTheme.js";
 
 export type RenderContext = {
@@ -11,6 +12,10 @@ export type RenderContext = {
    * Get current line number. Starts at 0.
    */
   getLineNumber: () => number;
+  /**
+   * Called when a focused node is rendered.
+   */
+  onFocusedNode: (node: UINode) => void;
 };
 
 export function createDefaultContext(): RenderContext {
@@ -26,5 +31,6 @@ export function createDefaultContext(): RenderContext {
     },
     shouldPrintBlockSeparator: false,
     getLineNumber: () => 0,
+    onFocusedNode: () => {},
   };
 }

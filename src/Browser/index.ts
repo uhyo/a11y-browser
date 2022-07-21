@@ -89,8 +89,9 @@ export async function browserMain(
         } as const)
     )
   );
+  let entirePageBuffer: string[] | undefined;
   try {
-    await renderFrame();
+    renderScreen(true);
     mainLoop: for await (const event of eventsStream) {
       switch (event.type) {
         case "command": {
@@ -101,12 +102,12 @@ export async function browserMain(
             }
             case "scroll": {
               state.scrollY += command.amount;
-              await renderFrame();
+              renderScreen(false);
               break;
             }
             case "scrollToTop": {
               state.scrollY = 0;
-              await renderFrame();
+              renderScreen(false);
               break;
             }
             case "scrollToBottom": {
@@ -114,7 +115,7 @@ export async function browserMain(
                 break;
               }
               state.scrollY = Math.max(0, uit.renderedPosition.end - rows + 2);
-              await renderFrame();
+              renderScreen(false);
               break;
             }
             case "key": {
@@ -135,21 +136,21 @@ export async function browserMain(
           [columns, rows] = tty.getWindowSize();
           state.columns = columns;
           state.rows = rows;
-          await renderFrame();
+          renderScreen(true);
           break;
         }
         case "uiupdate": {
           // console.error("update!");
           // console.error(inspect(acc.rootNode, { depth: 20 }));
           uit = getUINode(acc);
-          await renderFrame();
+          renderScreen(true);
           // console.error(inspect(uit, { depth: 20 }));
           break;
         }
         case "domcontentloaded": {
           // Scroll to the top
           state.scrollY = 0;
-          await renderFrame();
+          renderScreen(true);
           break;
         }
       }
@@ -163,43 +164,81 @@ export async function browserMain(
     await acc.dispose();
   }
 
-  async function renderFrame() {
+  function renderScreen(forceRerender: boolean) {
+    const eb = entirePageBuffer;
+    const reuseBuffer = !forceRerender && eb !== undefined;
+
+    if (reuseBuffer) {
+      // synthesize screen from buffer
+      const screen = eb.slice(state.scrollY, state.scrollY + rows - 1);
+      renderBrowserInterface(screen.join("\n"));
+      return;
+    }
+    ({ entirePageBuffer } = renderFrame(true));
+  }
+
+  type RenderResult = {
+    /**
+     * The entire page rendered as a string.
+     * One line per element.
+     */
+    entirePageBuffer: string[];
+    /**
+     * Currently focused node.
+     */
+    focusedNode: UINode | undefined;
+  };
+
+  function renderFrame(withFlush: boolean): RenderResult {
+    const entirePageBuffer = [];
     let screenBuffer = state.scrollY < 0 ? "\n".repeat(-state.scrollY) : "";
 
     const screenStartLine = Math.max(0, state.scrollY);
     const screenEndLine = state.scrollY + state.rows - 2;
 
+    let focusedNode: UINode | undefined;
+
     let currentLine = 0;
     const context = createDefaultContext();
     context.getLineNumber = () => currentLine;
+    context.onFocusedNode = (node) => {
+      focusedNode = node;
+    };
 
     let flushed = false;
     for (const line of frameRenderer(render(uit, context), state.columns)) {
-      if (currentLine >= screenStartLine && currentLine <= screenEndLine) {
-        screenBuffer += line + "\n";
-      }
-      if (currentLine >= screenEndLine && !flushed) {
-        flushed = true;
-        // render the screen buffer.
-        // Continue to render internally to calculate position of UINodes.
-        flush();
+      entirePageBuffer.push(line);
+      if (withFlush) {
+        if (currentLine >= screenStartLine && currentLine <= screenEndLine) {
+          screenBuffer += line + "\n";
+        }
+        if (currentLine >= screenEndLine && !flushed) {
+          flushed = true;
+          // render the screen buffer.
+          // Continue to render internally to calculate position of UINodes.
+          renderBrowserInterface(screenBuffer);
+        }
       }
       currentLine++;
     }
-    if (!flushed) {
-      flush();
+    if (withFlush && !flushed) {
+      renderBrowserInterface(screenBuffer);
     }
 
-    function flush() {
-      setCursorPosition(tty, 0, 0);
-      // clear to the bottom of the screen
-      tty.write("\x1b[0J");
-      tty.write(screenBuffer);
+    return {
+      entirePageBuffer,
+      focusedNode,
+    };
+  }
+  function renderBrowserInterface(screenBuffer: string) {
+    setCursorPosition(tty, 0, 0);
+    // clear to the bottom of the screen
+    tty.write("\x1b[0J");
+    tty.write(screenBuffer);
 
-      setCursorPosition(tty, rows - 1, 0);
-      // tty.write("\x1b[KLAST LINE");
-      tty.write("\x1b[");
-    }
+    setCursorPosition(tty, rows - 1, 0);
+    // tty.write("\x1b[KLAST LINE");
+    tty.write("\x1b[");
   }
 }
 
