@@ -2,6 +2,7 @@ import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
+import { createDefaultContext } from "../Renderer/RenderContext.js";
 import { constructUITree } from "../UITree/index.js";
 import { UINode } from "../UITree/UINode.js";
 import { mapAsync } from "../util/asyncIterator/mapAsync.js";
@@ -103,6 +104,19 @@ export async function browserMain(
               await renderFrame();
               break;
             }
+            case "scrollToTop": {
+              state.scrollY = 0;
+              await renderFrame();
+              break;
+            }
+            case "scrollToBottom": {
+              if (uit.renderedPosition === undefined) {
+                break;
+              }
+              state.scrollY = Math.max(0, uit.renderedPosition.end - rows + 2);
+              await renderFrame();
+              break;
+            }
             case "key": {
               const { key, modifiers = [] } = command;
               for (const m of modifiers) {
@@ -144,33 +158,48 @@ export async function browserMain(
     cleanup();
     cleanup2();
     cleanup3();
+    cleanup4();
     terminal.destroy();
     await acc.dispose();
   }
 
   async function renderFrame() {
-    let skipLines = state.scrollY < 0 ? 0 : state.scrollY;
     let screenBuffer = state.scrollY < 0 ? "\n".repeat(-state.scrollY) : "";
-    let screenBufferLines = Math.max(0, -state.scrollY);
-    for (const line of frameRenderer(render(uit), state.columns)) {
-      if (skipLines > 0) {
-        skipLines--;
-        continue;
-      }
-      screenBuffer += line + "\n";
-      screenBufferLines++;
-      if (screenBufferLines >= state.rows - 1) {
-        break;
-      }
-    }
-    setCursorPosition(tty, 0, 0);
-    // clear to the bottom of the screen
-    tty.write("\x1b[0J");
-    tty.write(screenBuffer);
 
-    setCursorPosition(tty, rows - 1, 0);
-    // tty.write("\x1b[KLAST LINE");
-    tty.write("\x1b[");
+    const screenStartLine = Math.max(0, state.scrollY);
+    const screenEndLine = state.scrollY + state.rows - 2;
+
+    let currentLine = 0;
+    const context = createDefaultContext();
+    context.getLineNumber = () => currentLine;
+
+    let flushed = false;
+    for (const line of frameRenderer(render(uit, context), state.columns)) {
+      if (currentLine >= screenStartLine && currentLine <= screenEndLine) {
+        screenBuffer += line + "\n";
+      }
+      if (currentLine >= screenEndLine && !flushed) {
+        flushed = true;
+        // render the screen buffer.
+        // Continue to render internally to calculate position of UINodes.
+        flush();
+      }
+      currentLine++;
+    }
+    if (!flushed) {
+      flush();
+    }
+
+    function flush() {
+      setCursorPosition(tty, 0, 0);
+      // clear to the bottom of the screen
+      tty.write("\x1b[0J");
+      tty.write(screenBuffer);
+
+      setCursorPosition(tty, rows - 1, 0);
+      // tty.write("\x1b[KLAST LINE");
+      tty.write("\x1b[");
+    }
   }
 }
 

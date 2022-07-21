@@ -1,22 +1,22 @@
 import { UINode } from "../UITree/UINode.js";
 import { splitByLines } from "../util/textIterator/splitByLines.js";
 import { indentMarkerEnd, indentMarkerStart } from "./indentMarker.js";
-import { createDefaultContext, RenderContext } from "./RenderContext.js";
+import { RenderContext } from "./RenderContext.js";
 
 /**
  * Render given node.
  */
 export function* render(
   node: UINode,
-  context: RenderContext = createDefaultContext()
+  context: RenderContext
 ): IterableIterator<string> {
-  let result = "";
   if (node.type === "wrapper" || node.type === "block") {
     if (context.shouldPrintBlockSeparator) {
       yield "\n";
       context.shouldPrintBlockSeparator = false;
     }
   }
+  const startLine = context.getLineNumber();
   switch (node.type) {
     case "wrapper": {
       const header = node.renderHeader(context, node.rawNode);
@@ -77,7 +77,11 @@ export function* render(
       break;
     }
   }
-  return result;
+  const endLine = context.getLineNumber();
+  node.renderedPosition = {
+    start: startLine,
+    end: endLine,
+  };
 }
 
 function* renderInlineChildren(

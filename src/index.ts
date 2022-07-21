@@ -4,6 +4,7 @@ import { inspect } from "util";
 import { AccessibilityTree } from "./AccessibilityTree/index.js";
 import { browserMain } from "./Browser/index.js";
 import { render } from "./Renderer/index.js";
+import { createDefaultContext } from "./Renderer/RenderContext.js";
 import { constructUITree } from "./UITree/index.js";
 
 const args = arg({
@@ -40,7 +41,8 @@ async function main() {
       }
       const uit = constructUITree(rootNode);
       console.log(inspect(uit, { depth: 15 }));
-      for (const line of render(uit)) {
+      const context = createDefaultContext();
+      for (const line of render(uit, context)) {
         process.stdout.write(line);
       }
       return;

@@ -14,6 +14,13 @@ export type ParentRenderer = (
 export type UINodeBase = {
   focused: boolean;
   rawNode?: AXNode;
+  /**
+   * Position of the node when rendered.
+   */
+  renderedPosition?: {
+    start: number;
+    end: number;
+  };
 };
 
 export type WrapperUINode = UINodeBase & {

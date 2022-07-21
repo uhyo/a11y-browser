@@ -6,6 +6,8 @@ import { InputChunk } from "./Terminal/inputChunkParser.js";
 type Command =
   | { type: "quit" }
   | { type: "scroll"; amount: number }
+  | { type: "scrollToTop" }
+  | { type: "scrollToBottom" }
   | { type: "key"; key: KeyInput; modifiers?: KeyInput[] };
 
 export function mapInputToCommand(
@@ -57,6 +59,12 @@ export function mapInputToCommand(
         if (escapeSequenceEquals(chunk.sequence, pageUpSequence)) {
           return { type: "scroll", amount: -state.rows };
         }
+        if (escapeSequenceEquals(chunk.sequence, homeSequence)) {
+          return { type: "scrollToTop" };
+        }
+        if (escapeSequenceEquals(chunk.sequence, endSequence)) {
+          return { type: "scrollToBottom" };
+        }
       }
     }
     return undefined;
@@ -68,6 +76,8 @@ const keyDownSequence = [0x1b, 0x5b, 0x42]; // ESC [ B
 const shiftTabSequence = [0x1b, 0x5b, 0x5a]; // ESC [ Z
 const pageUpSequence = [0x1b, 0x5b, 0x35, 0x7e]; // ESC [ 5 ~
 const pageDownSequence = [0x1b, 0x5b, 0x36, 0x7e]; // ESC [ 6 ~
+const homeSequence = [0x1b, 0x5b, 0x48]; // ESC [ H
+const endSequence = [0x1b, 0x5b, 0x46]; // ESC [ F
 
 export function escapeSequenceEquals(
   sequence: readonly number[],

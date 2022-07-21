@@ -37,11 +37,11 @@ export function* frameRenderer(
       continue;
     }
     yield* mapIterator(
-      wrapAnsi(line, width - indentSizeStack.sum, {
+      wrapAnsi(line, width - indentSizeStack.sum - 1, {
         hard: true,
         wordWrap: false,
       }).split("\n"),
-      (line) => indentStrings.result + line
+      (line) => " " + indentStrings.result + line
     );
   }
 }

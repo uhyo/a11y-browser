@@ -7,6 +7,10 @@ export type RenderContext = {
    * Flag on whether separator between blocks should be printed.
    */
   shouldPrintBlockSeparator: boolean;
+  /**
+   * Get current line number. Starts at 0.
+   */
+  getLineNumber: () => number;
 };
 
 export function createDefaultContext(): RenderContext {
@@ -21,5 +25,6 @@ export function createDefaultContext(): RenderContext {
       focused: chalk.red.bold,
     },
     shouldPrintBlockSeparator: false,
+    getLineNumber: () => 0,
   };
 }
