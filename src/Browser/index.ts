@@ -144,7 +144,16 @@ export async function browserMain(
           // console.error("update!");
           // console.error(inspect(acc.rootNode, { depth: 20 }));
           uit = getUINode(acc);
-          renderScreen(true);
+          // renderScreen(true);
+          rerenderOnBackground();
+          // todo: detect if focused node truly changed
+          if (lastRenderingResult?.focusedNode?.renderedPosition) {
+            scrollTo(
+              lastRenderingResult.focusedNode.renderedPosition.start,
+              lastRenderingResult.focusedNode.renderedPosition.end
+            );
+          }
+          renderScreen(false);
           // console.error(inspect(uit, { depth: 20 }));
           break;
         }
@@ -163,6 +172,23 @@ export async function browserMain(
     cleanup4();
     terminal.destroy();
     await acc.dispose();
+  }
+
+  function scrollTo(start: number, end: number) {
+    const regionHeight = end - start + 1;
+    const currentScrollStart = state.scrollY;
+    const currentScrollEnd = state.scrollY + getBrowsingAreaHeight();
+
+    if (end > currentScrollEnd) {
+      state.scrollY = start + regionHeight - getBrowsingAreaHeight() + 1;
+    }
+    if (start < currentScrollStart) {
+      state.scrollY = start;
+    }
+  }
+
+  function rerenderOnBackground() {
+    lastRenderingResult = renderFrame(false);
   }
 
   function renderScreen(forceRerender: boolean) {
@@ -260,6 +286,10 @@ export async function browserMain(
     setCursorPosition(tty, rows - 1, 0);
     // tty.write("\x1b[KLAST LINE");
     tty.write("\x1b[");
+  }
+
+  function getBrowsingAreaHeight() {
+    return rows - 1;
   }
 }
 
