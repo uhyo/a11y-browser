@@ -2,7 +2,7 @@ import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
-import { createDefaultContext } from "../Renderer/RenderContext.js";
+import { defaultTheme, RenderContext } from "../Renderer/RenderContext.js";
 import { constructUITree } from "../UITree/index.js";
 import { UINode } from "../UITree/UINode.js";
 import { mapAsync } from "../util/asyncIterator/mapAsync.js";
@@ -49,6 +49,7 @@ export async function browserMain(
     exitAlternateScreen(tty);
   });
 
+  const renderingTheme = defaultTheme;
   const state = createDefaultBrowserState();
   state.columns = columns;
   state.rows = rows;
@@ -89,7 +90,7 @@ export async function browserMain(
         } as const)
     )
   );
-  let entirePageBuffer: string[] | undefined;
+  let lastRenderingResult: RenderResult | undefined;
   try {
     renderScreen(true);
     mainLoop: for await (const event of eventsStream) {
@@ -165,16 +166,19 @@ export async function browserMain(
   }
 
   function renderScreen(forceRerender: boolean) {
-    const eb = entirePageBuffer;
+    const eb = lastRenderingResult?.entirePageBuffer;
     const reuseBuffer = !forceRerender && eb !== undefined;
 
     if (reuseBuffer) {
       // synthesize screen from buffer
       const screen = eb.slice(state.scrollY, state.scrollY + rows - 1);
-      renderBrowserInterface(screen.join("\n"));
+      renderBrowserInterface(
+        screen.join("\n"),
+        lastRenderingResult?.focusedNode
+      );
       return;
     }
-    ({ entirePageBuffer } = renderFrame(true));
+    lastRenderingResult = renderFrame(true);
   }
 
   type RenderResult = {
@@ -199,10 +203,13 @@ export async function browserMain(
     let focusedNode: UINode | undefined;
 
     let currentLine = 0;
-    const context = createDefaultContext();
-    context.getLineNumber = () => currentLine;
-    context.onFocusedNode = (node) => {
-      focusedNode = node;
+    const context: RenderContext = {
+      theme: renderingTheme,
+      shouldPrintBlockSeparator: false,
+      getLineNumber: () => currentLine,
+      onFocusedNode: (node) => {
+        focusedNode = node;
+      },
     };
 
     let flushed = false;
@@ -216,13 +223,13 @@ export async function browserMain(
           flushed = true;
           // render the screen buffer.
           // Continue to render internally to calculate position of UINodes.
-          renderBrowserInterface(screenBuffer);
+          renderBrowserInterface(screenBuffer, focusedNode);
         }
       }
       currentLine++;
     }
     if (withFlush && !flushed) {
-      renderBrowserInterface(screenBuffer);
+      renderBrowserInterface(screenBuffer, focusedNode);
     }
 
     return {
@@ -230,11 +237,25 @@ export async function browserMain(
       focusedNode,
     };
   }
-  function renderBrowserInterface(screenBuffer: string) {
+  function renderBrowserInterface(
+    screenBuffer: string,
+    focusedNode: UINode | undefined
+  ) {
     setCursorPosition(tty, 0, 0);
     // clear to the bottom of the screen
     tty.write("\x1b[0J");
     tty.write(screenBuffer);
+
+    // Render focused icon
+    if (focusedNode?.renderedPosition) {
+      const { start, end } = focusedNode.renderedPosition;
+      const startLine = start - state.scrollY;
+      const endLine = end - state.scrollY;
+      for (let i = startLine; i <= endLine; i++) {
+        setCursorPosition(tty, i, 0);
+        tty.write(renderingTheme.focused(">"));
+      }
+    }
 
     setCursorPosition(tty, rows - 1, 0);
     // tty.write("\x1b[KLAST LINE");

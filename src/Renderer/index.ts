@@ -82,6 +82,9 @@ export function* render(
     start: startLine,
     end: endLine,
   };
+  if (node.focused) {
+    context.onFocusedNode(node);
+  }
 }
 
 function* renderInlineChildren(

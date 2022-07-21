@@ -18,19 +18,12 @@ export type RenderContext = {
   onFocusedNode: (node: UINode) => void;
 };
 
-export function createDefaultContext(): RenderContext {
-  return {
-    theme: {
-      link: chalk.blueBright.underline,
-      heading: chalk.cyan.bold,
-      button: chalk.gray,
-      image: chalk.yellowBright,
-      structure: chalk.green,
-      supplemental: chalk.gray,
-      focused: chalk.red.bold,
-    },
-    shouldPrintBlockSeparator: false,
-    getLineNumber: () => 0,
-    onFocusedNode: () => {},
-  };
-}
+export const defaultTheme: RenderingTheme = {
+  link: chalk.blueBright.underline,
+  heading: chalk.cyan.bold,
+  button: chalk.gray,
+  image: chalk.yellowBright,
+  structure: chalk.green,
+  supplemental: chalk.gray,
+  focused: chalk.red.bold,
+};
