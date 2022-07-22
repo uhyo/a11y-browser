@@ -26,4 +26,5 @@ export const defaultTheme: RenderingTheme = {
   structure: chalk.green,
   supplemental: chalk.gray,
   focused: chalk.red.bold,
+  url: chalk.cyan,
 };

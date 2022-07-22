@@ -1,5 +1,6 @@
 import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
+import { default as wrapAnsi } from "wrap-ansi";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { render } from "../Renderer/index.js";
 import { defaultTheme, RenderContext } from "../Renderer/RenderContext.js";
@@ -58,7 +59,7 @@ export async function browserMain(
   const [rawKeyInput, cleanup] = getKeyInputStream(terminal);
   const [rawResize, cleanup2] = getResizeEventStream(tty);
   const [rawAXNodeUpdate, cleanup3] = getAXNodeUpdateStream(acc);
-  const [rowBrowserEvent, cleanup4] = getBrowserEventStream(page);
+  const [rowBrowserEvent, cleanup4] = await getBrowserEventStream(page);
   const eventsStream = mergeAsync(
     mapAsync(
       mapInputToCommand(state, rawKeyInput),
@@ -84,9 +85,10 @@ export async function browserMain(
     ),
     mapAsync(
       rowBrowserEvent,
-      () =>
+      (event) =>
         ({
-          type: "domcontentloaded",
+          type: "browserevent",
+          event,
         } as const)
     )
   );
@@ -157,10 +159,22 @@ export async function browserMain(
           // console.error(inspect(uit, { depth: 20 }));
           break;
         }
-        case "domcontentloaded": {
-          // Scroll to the top
-          state.scrollY = 0;
-          renderScreen(true);
+        case "browserevent": {
+          switch (event.event.type) {
+            case "domcontentloaded": {
+              // Scroll to the top
+              console.error("DOMContentLoaded!");
+              state.scrollY = 0;
+              renderScreen(true);
+              break;
+            }
+            case "navigated": {
+              // Scroll to the top
+              state.scrollY = 0;
+              renderScreen(false);
+              break;
+            }
+          }
           break;
         }
       }
@@ -169,7 +183,7 @@ export async function browserMain(
     cleanup();
     cleanup2();
     cleanup3();
-    cleanup4();
+    await cleanup4();
     terminal.destroy();
     await acc.dispose();
   }
@@ -284,8 +298,17 @@ export async function browserMain(
     }
 
     setCursorPosition(tty, rows - 1, 0);
-    // tty.write("\x1b[KLAST LINE");
-    tty.write("\x1b[");
+    // Render last line
+    const lastLine =
+      wrapAnsi(
+        renderingTheme.url(`🌐 ${page.url()}`) + "\x1b[K",
+        state.columns,
+        {
+          hard: true,
+          wordWrap: false,
+        }
+      ).split("\n")[0] ?? "";
+    tty.write(lastLine);
   }
 
   function getBrowsingAreaHeight() {

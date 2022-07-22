@@ -29,4 +29,8 @@ export type RenderingTheme = {
    * Theme for focused marker.
    */
   focused: Theme;
+  /**
+   * Theme for URL.
+   */
+  url: Theme;
 };
