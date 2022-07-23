@@ -27,13 +27,14 @@ export class AccessibilityTree {
   #nodeUpdateHandler = ({
     nodes,
   }: Protocol.Protocol.Accessibility.NodesUpdatedEvent): void => {
-    const rootNodeId = this.#rootNode?.id;
-    if (rootNodeId === undefined) {
-      throw new Error("Root node not found");
-    }
     update(this.#cdp, this.#nodes, nodes).then(
       () => {
-        this.#rootNode = this.#nodes.get(rootNodeId);
+        const rootWebArea = nodes.find(
+          (node) => node.role?.value === "RootWebArea"
+        );
+        if (rootWebArea) {
+          this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
+        }
         this.updatedEvent.emit("update", this.#nodes);
       },
       (err) => {

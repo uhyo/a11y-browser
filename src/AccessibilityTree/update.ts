@@ -27,23 +27,24 @@ export async function update(
     if (acc.parentId !== undefined) {
       affectedParentIds.add(acc.parentId);
     }
-    if (existing === undefined) {
-      // new node
-      continue;
-    }
-    // replaces existing node
+    let removedChildrenIds: Set<string> | undefined;
     if (!node.childIds) {
       continue;
     }
-    const removedChildrenIds = new Set(existing.children.map((x) => x.id));
+    if (existing !== undefined) {
+      // replaces existing node
+      removedChildrenIds = new Set(existing.children.map((x) => x.id));
+    }
     for (const childId of node.childIds) {
-      removedChildrenIds.delete(childId);
+      removedChildrenIds?.delete(childId);
       if (!nodeMap.has(childId)) {
         parentsWithLackedChildren.push(node);
       }
     }
-    for (const id of removedChildrenIds) {
-      nodeMap.delete(id);
+    if (removedChildrenIds) {
+      for (const id of removedChildrenIds) {
+        nodeMap.delete(id);
+      }
     }
   }
   const gens = await Promise.all(
