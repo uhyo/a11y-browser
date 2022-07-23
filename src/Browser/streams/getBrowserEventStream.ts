@@ -26,7 +26,6 @@ export async function getBrowserEventStream(
   cdp.on(
     "Page.lifecycleEvent",
     (ev: Protocol.Protocol.Page.LifecycleEventEvent) => {
-      console.error("lifecycle!!", ev.name);
       if (ev.name === "navigation") {
         // Top-level frame
         emit({
@@ -47,7 +46,6 @@ export async function getBrowserEventStream(
   );
 
   const domContentLoadedHandler = () => {
-    console.error("domcontentloaded");
     emit({
       type: "domcontentloaded",
     });

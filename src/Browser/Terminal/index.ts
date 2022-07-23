@@ -1,3 +1,4 @@
+import { globalLogger } from "../../Logger/global.js";
 import { InputChunk, parseInputChunks } from "./inputChunkParser.js";
 import { InputHandlerMethods, RegisterHandlerOptions } from "./inputHandler.js";
 
@@ -34,7 +35,7 @@ export class Terminal {
       }
       for (const chunk of chunks) {
         if (chunk.type === "escape-sequence") {
-          console.error(
+          globalLogger.error(
             "esc",
             chunk.sequence
               .map((value) =>
@@ -45,7 +46,7 @@ export class Terminal {
               .join(" ")
           );
         } else {
-          console.error("raw", chunk.value);
+          globalLogger.error("raw", chunk.value);
         }
         for (const control of this.#inputControls) {
           const mapped = control.filterMap(chunk);

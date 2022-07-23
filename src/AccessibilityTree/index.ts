@@ -1,6 +1,7 @@
 import Protocol from "devtools-protocol";
 import EventEmitter from "events";
 import { CDPSession } from "puppeteer";
+import { globalLogger } from "../Logger/global.js";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
 import { joinIterables } from "../util/iterator/joinIterables.js";
@@ -37,7 +38,7 @@ export class AccessibilityTree {
       },
       (err) => {
         // Protocol error may happen when navigated during the update.
-        console.error(err);
+        globalLogger.error(err);
       }
     );
   };

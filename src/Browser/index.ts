@@ -2,6 +2,7 @@ import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
 import { default as wrapAnsi } from "wrap-ansi";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
+import { globalLogger } from "../Logger/global.js";
 import { render } from "../Renderer/index.js";
 import { defaultTheme, RenderContext } from "../Renderer/RenderContext.js";
 import { constructUITree } from "../UITree/index.js";
@@ -34,7 +35,7 @@ export async function browserMain(
   const startTime = performance.now();
   await acc.initialize();
   const endTime = performance.now();
-  console.error("initialize", endTime - startTime, "ms");
+  globalLogger.debug("initialize", endTime - startTime, "ms");
   let uit = getUINode(acc);
 
   let [columns, rows] = tty.getWindowSize();
@@ -163,7 +164,6 @@ export async function browserMain(
           switch (event.event.type) {
             case "domcontentloaded": {
               // Scroll to the top
-              console.error("DOMContentLoaded!");
               state.scrollY = 0;
               renderScreen(true);
               break;

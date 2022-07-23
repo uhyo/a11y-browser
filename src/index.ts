@@ -1,17 +1,20 @@
 import arg from "arg";
 import puppeteer from "puppeteer";
-import { inspect } from "util";
 import { AccessibilityTree } from "./AccessibilityTree/index.js";
 import { browserMain } from "./Browser/index.js";
+import { setGlobalLogger } from "./Logger/global.js";
 import { render } from "./Renderer/index.js";
 import { defaultTheme, RenderContext } from "./Renderer/RenderContext.js";
 import { constructUITree } from "./UITree/index.js";
 
 const args = arg({
   "--snapshot": Boolean,
+  "--debug": Boolean,
 });
 
 const url = args._[0] ?? "https://example.com/";
+
+setGlobalLogger(args["--debug"] ?? false);
 
 main()
   .then(() => {
@@ -40,7 +43,6 @@ async function main() {
         throw new Error("Root node not found");
       }
       const uit = constructUITree(rootNode);
-      console.log(inspect(uit, { depth: 15 }));
       const context: RenderContext = {
         theme: defaultTheme,
         shouldPrintBlockSeparator: false,

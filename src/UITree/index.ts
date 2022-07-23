@@ -1,5 +1,6 @@
 import { inspect } from "util";
 import { AccessibilityNode } from "../AccessibilityTree/AccessibilityNode.js";
+import { globalLogger } from "../Logger/global.js";
 import {
   buttonInline,
   comboBoxInline,
@@ -213,8 +214,8 @@ function convertNode(
       };
     }
     default: {
-      console.error(`⚠️ Unknown role: ${role}`);
-      console.error(inspect(rawNode, { depth: 10 }));
+      globalLogger.error(`⚠️ Unknown role: ${role}`);
+      globalLogger.error(inspect(rawNode, { depth: 10 }));
       return {
         type: "wrapper",
         renderHeader: genericHeader,

@@ -1,5 +1,6 @@
 import { CDPSession } from "puppeteer";
 import { inspect } from "util";
+import { globalLogger } from "../Logger/global.js";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
 import { joinAsyncIterables } from "../util/asyncIterator/joinAsyncIterables.js";
@@ -16,7 +17,7 @@ export async function update(
   nodeMap: Map<string, AccessibilityNode>,
   updates: readonly AXNode[]
 ): Promise<void> {
-  console.error("AXNodes", inspect(updates, { depth: 10 }));
+  globalLogger.error("AXNodes", inspect(updates, { depth: 10 }));
   const affectedParentIds = new Set<string>();
   const parentsWithLackedChildren: AXNode[] = [];
   for (const node of updates) {
