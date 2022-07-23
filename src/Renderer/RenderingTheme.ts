@@ -30,6 +30,10 @@ export type RenderingTheme = {
    */
   focused: Theme;
   /**
+   * Theme for code.
+   */
+  code: Theme;
+  /**
    * Theme for URL.
    */
   url: Theme;

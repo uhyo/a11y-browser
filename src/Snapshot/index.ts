@@ -23,6 +23,7 @@ export async function runSnapshot(
   const context: RenderContext = {
     theme: defaultTheme,
     shouldPrintBlockSeparator: false,
+    pre: false,
     getLineNumber: () => 0,
     onFocusedNode: () => {},
   };

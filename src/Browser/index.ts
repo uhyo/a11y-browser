@@ -249,6 +249,7 @@ export async function browserMain(
     const context: RenderContext = {
       theme: renderingTheme,
       shouldPrintBlockSeparator: false,
+      pre: false,
       getLineNumber: () => currentLine,
       onFocusedNode: (node) => {
         focusedNode = node;

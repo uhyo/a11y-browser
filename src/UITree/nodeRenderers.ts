@@ -41,7 +41,28 @@ export const genericIndent: StandaloneRenderer = (context) => {
 };
 
 export const textInline: ParentRenderer = function* (context, rawNode) {
+  if (context.pre) {
+    // In pre-context, use `sources` to obtain text before newlines are removed.
+    const textSource = rawNode?.name?.sources?.find(
+      (s) => s.type === "contents"
+    )?.value?.value;
+    if (textSource) {
+      yield textSource;
+      return;
+    }
+  }
   yield getName(rawNode) ?? "";
+};
+
+export const preBlock: ParentRenderer = function* (context, rawNode, child) {
+  const name = getName(rawNode);
+  if (name) {
+    yield context.theme.supplemental(`(${name})`) + "\n";
+  }
+  const prevPre = context.pre;
+  context.pre = true;
+  yield* addNewLineToEnd(child, () => context.shouldPrintBlockSeparator);
+  context.pre = prevPre;
 };
 
 export const headingBlock: ParentRenderer = function* (
@@ -86,6 +107,24 @@ export const linkHeader: StandaloneRenderer = (context, rawNode) => {
 
 export const linkIndent: StandaloneRenderer = (context) => {
   return context.theme.link("|") + " ";
+};
+
+export const codeInline: ParentRenderer = function* (context, rawNode, child) {
+  const name = getName(rawNode)?.trim();
+  if (name) {
+    yield context.theme.code(`<Code: ${name}>`);
+  } else {
+    yield* mapIterator(child, context.theme.code);
+  }
+};
+
+export const codeHeader: StandaloneRenderer = (context, rawNode) => {
+  const name = getName(rawNode);
+  return context.theme.code(`<Code${maybeUndefinedAnd(name?.trim(), ": ")}>`);
+};
+
+export const codeIndent: StandaloneRenderer = (context) => {
+  return context.theme.code("|") + " ";
 };
 
 export const buttonInline: ParentRenderer = function* (

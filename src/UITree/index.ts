@@ -3,6 +3,9 @@ import { AccessibilityNode } from "../AccessibilityTree/AccessibilityNode.js";
 import { globalLogger } from "../Logger/global.js";
 import {
   buttonInline,
+  codeHeader,
+  codeIndent,
+  codeInline,
   comboBoxInline,
   genericBlock,
   genericHeader,
@@ -19,6 +22,7 @@ import {
   listHeader,
   listIndent,
   listMarker,
+  preBlock,
   regionHeader,
   regionIndent,
   textInline,
@@ -123,6 +127,21 @@ function convertNode(
         children,
       };
     }
+    case "code": {
+      if (children.every(isInlineNode)) {
+        return {
+          type: "inline",
+          render: codeInline,
+          children,
+        };
+      }
+      return {
+        type: "wrapper",
+        renderHeader: codeHeader,
+        renderIndent: codeIndent,
+        children,
+      };
+    }
     case "generic":
     case "time":
     case "alert":
@@ -149,7 +168,8 @@ function convertNode(
         children,
       };
     }
-    case "Section": {
+    case "Section":
+    case "HeaderAsNonLandmark": {
       return {
         type: "wrapper",
         renderHeader: genericHeader,
@@ -157,7 +177,19 @@ function convertNode(
         children,
       };
     }
+    case "Pre": {
+      // Chromium-internal role for Pre texts.
+      return {
+        type: "block",
+        render: preBlock,
+        children,
+      };
+    }
     case "StaticText": {
+      globalLogger.debug(
+        "StaticText",
+        inspect(node.rawNode.name, { depth: 10 })
+      );
       return {
         type: "inline",
         render: textInline,

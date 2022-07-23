@@ -9,6 +9,10 @@ export type RenderContext = {
    */
   shouldPrintBlockSeparator: boolean;
   /**
+   * Flag on whether currently in a pre context.
+   */
+  pre: boolean;
+  /**
    * Get current line number. Starts at 0.
    */
   getLineNumber: () => number;
@@ -26,5 +30,6 @@ export const defaultTheme: RenderingTheme = {
   structure: chalk.green,
   supplemental: chalk.gray,
   focused: chalk.red.bold,
+  code: chalk.gray,
   url: chalk.cyan,
 };
