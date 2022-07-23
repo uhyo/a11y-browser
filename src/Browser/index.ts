@@ -106,6 +106,9 @@ export async function browserMain(
             }
             case "scroll": {
               state.scrollY += command.amount;
+              if (state.scrollY < 0) {
+                state.scrollY = 0;
+              }
               renderScreen(false);
               break;
             }
@@ -292,6 +295,9 @@ export async function browserMain(
       const startLine = start - state.scrollY;
       const endLine = end - state.scrollY;
       for (let i = startLine; i <= endLine; i++) {
+        if (i < 0 || i >= getBrowsingAreaHeight()) {
+          continue;
+        }
         setCursorPosition(tty, i, 0);
         tty.write(renderingTheme.focused(">"));
       }
