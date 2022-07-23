@@ -25,6 +25,7 @@ import {
   preBlock,
   regionHeader,
   regionIndent,
+  renderNothing,
   textInline,
 } from "./nodeRenderers.js";
 import { InlineUINode, UINode, UINodeBase } from "./UINode.js";
@@ -185,11 +186,8 @@ function convertNode(
         children,
       };
     }
-    case "StaticText": {
-      globalLogger.debug(
-        "StaticText",
-        inspect(node.rawNode.name, { depth: 10 })
-      );
+    case "StaticText":
+    case "ListMarker": {
       return {
         type: "inline",
         render: textInline,
@@ -226,9 +224,12 @@ function convertNode(
       };
     }
     case "listitem": {
+      const hasListMarker = children.some(
+        (child) => child.rawNode?.role?.value === "ListMarker"
+      );
       return {
         type: "listitem",
-        renderMarker: listMarker,
+        renderMarker: hasListMarker ? renderNothing : listMarker,
         children,
       };
     }

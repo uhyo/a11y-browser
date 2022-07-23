@@ -191,6 +191,10 @@ export const regionIndent: StandaloneRenderer = (context) => {
   return context.theme.structure("|") + " ";
 };
 
+export const renderNothing: StandaloneRenderer = () => {
+  return "";
+};
+
 export function getProperty(
   node: AXNode | undefined,
   name: Protocol.Accessibility.AXPropertyName,
