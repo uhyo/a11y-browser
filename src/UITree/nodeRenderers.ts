@@ -158,7 +158,9 @@ export const comboBoxInline: ParentRenderer = function* (
 ) {
   const name = getName(rawNode)?.trim();
   if (name) {
-    yield context.theme.button(`[Input(${name})]`);
+    yield context.theme.button(
+      `[Input(${name}${maybeUndefinedAnd(rawNode?.value?.value, ": ")})]`
+    );
   } else {
     yield context.theme.button("[Input: ");
     yield* mapIterator(child, context.theme.button);

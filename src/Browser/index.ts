@@ -35,6 +35,7 @@ export async function browserMain(
   tty: NodeJS.WriteStream
 ): Promise<void> {
   const cdp = await page.target().createCDPSession();
+  await cdp.send("DOM.enable");
   const acc = new AccessibilityTree(cdp);
   const startTime = performance.now();
   await acc.initialize();
@@ -149,6 +150,20 @@ export async function browserMain(
               globalLogger.debug(inspect(focusedNode, { depth: 10 }));
               const userInput = await getUserInput(focusedNode);
               globalLogger.debug(`userInput = ${userInput}`);
+              // reflect user input to DOM
+              if (focusedNode.backendDOMNodeId) {
+                await cdp.send("DOM.getDocument");
+                const { object } = await cdp.send("DOM.resolveNode", {
+                  backendNodeId: focusedNode.backendDOMNodeId,
+                });
+                await cdp.send("Runtime.callFunctionOn", {
+                  objectId: object.objectId,
+                  functionDeclaration: `(function(value) { this.value = ""; })`,
+                });
+                await cdp.send("Input.insertText", {
+                  text: userInput,
+                });
+              }
               renderScreen(false);
               break;
             }
