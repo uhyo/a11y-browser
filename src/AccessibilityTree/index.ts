@@ -1,6 +1,7 @@
 import Protocol from "devtools-protocol";
 import EventEmitter from "events";
 import { CDPSession } from "puppeteer";
+import { debounce } from "throttle-debounce";
 import { globalLogger } from "../Logger/global.js";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
@@ -18,7 +19,7 @@ export class AccessibilityTree {
   #cdp: CDPSession;
   #rootNode: AccessibilityNode | undefined;
 
-  readonly updatedEvent = new EventEmitter();
+  readonly treeEvent = new EventEmitter();
 
   constructor(cdp: CDPSession) {
     this.#cdp = cdp;
@@ -35,14 +36,20 @@ export class AccessibilityTree {
         if (rootWebArea) {
           this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
         }
-        this.updatedEvent.emit("update", this.#nodes);
+        this.treeEvent.emit("update");
       },
       (err) => {
         // Protocol error may happen when navigated during the update.
+        // In this case, we attempt to initialize again.
         globalLogger.error(err);
+        this.#debouncedReconstruct();
       }
     );
   };
+
+  #debouncedReconstruct = debounce(500, this.reconstruct, {
+    atBegin: false,
+  });
 
   /**
    * Constructs an accessibility tree by communicating with the browser.
@@ -50,6 +57,13 @@ export class AccessibilityTree {
   public async initialize(): Promise<void> {
     this.#nodes.clear();
     await this.#cdp.send("Accessibility.enable");
+
+    await this.reconstruct();
+
+    this.#cdp.on("Accessibility.nodesUpdated", this.#nodeUpdateHandler);
+  }
+
+  public async reconstruct(): Promise<void> {
     const res = await this.#cdp.send("Accessibility.getRootAXNode");
 
     const nodes = await asyncIteratorToArray(
@@ -57,11 +71,10 @@ export class AccessibilityTree {
     );
 
     // console.log(inspect(nodes, { depth: 10 }));
+    this.#nodes = new Map();
     convert(joinIterables([res.node], nodes), this.#nodes);
     this.#rootNode = this.#nodes.get(res.node.nodeId);
-
-    this.#cdp.on("Accessibility.nodesUpdated", this.#nodeUpdateHandler);
-    // process.exit(0);
+    this.treeEvent.emit("update");
   }
 
   public async dispose(): Promise<void> {

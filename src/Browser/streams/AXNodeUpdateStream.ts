@@ -9,7 +9,7 @@ export function getAXNodeUpdateStream(
     abortController.abort();
   };
   return [
-    on(tree.updatedEvent, "update", {
+    on(tree.treeEvent, "update", {
       signal: abortController.signal,
     }),
     cleanup,

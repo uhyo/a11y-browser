@@ -14,6 +14,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.0.0",
+    "@types/throttle-debounce": "^5.0.0",
     "@types/wrap-ansi": "^8.0.1",
     "devtools-protocol": "^0.0.1019158",
     "prettier": "^2.7.1",
@@ -26,6 +27,7 @@
     "puppeteer": "^15.3.0",
     "string-width": "^5.1.2",
     "terminfo": "^0.1.1",
+    "throttle-debounce": "^5.0.0",
     "wrap-ansi": "^8.0.1"
   }
 }

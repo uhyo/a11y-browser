@@ -39,6 +39,7 @@ export async function update(
       removedChildrenIds?.delete(childId);
       if (!nodeMap.has(childId)) {
         parentsWithLackedChildren.push(node);
+        break;
       }
     }
     if (removedChildrenIds) {
