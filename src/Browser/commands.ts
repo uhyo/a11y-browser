@@ -8,63 +8,73 @@ type Command =
   | { type: "scroll"; amount: number }
   | { type: "scrollToTop" }
   | { type: "scrollToBottom" }
-  | { type: "key"; key: KeyInput; modifiers?: KeyInput[] };
+  | { type: "key"; key: KeyInput; modifiers?: KeyInput[] }
+  | { type: "switchToInputMode" };
 
 export function mapInputToCommand(
   state: BrowserState,
   input: AsyncIterable<InputChunk>
 ): AsyncIterable<Command> {
-  return filterMapAsync(input, (chunk) => {
-    switch (chunk.type) {
-      case "raw": {
-        switch (chunk.value) {
-          case 0:
-          case 3:
-            return { type: "quit" };
-          case 9: // tab
-            return {
-              type: "key",
-              key: "Tab",
-            };
-          case 13: // enter
-            return {
-              type: "key",
-              key: "Enter",
-            };
-          case 32: // space
-            return {
-              type: "key",
-              key: " ",
-            };
+  return filterMapAsync(input, (chunk): Command | undefined => {
+    switch (state.mode.type) {
+      case "normal": {
+        switch (chunk.type) {
+          case "raw": {
+            switch (chunk.value) {
+              case 0:
+              case 3:
+                return { type: "quit" };
+              case 9: // tab
+                return {
+                  type: "key",
+                  key: "Tab",
+                };
+              case 13: // enter
+                return {
+                  type: "key",
+                  key: "Enter",
+                };
+              case 32: // space
+                return {
+                  type: "key",
+                  key: " ",
+                };
+              case 0x69: // i
+                return {
+                  type: "switchToInputMode",
+                };
+            }
+            break;
+          }
+          case "escape-sequence": {
+            if (escapeSequenceEquals(chunk.sequence, keyUpSequence)) {
+              return { type: "scroll", amount: -1 };
+            }
+            if (escapeSequenceEquals(chunk.sequence, keyDownSequence)) {
+              return { type: "scroll", amount: 1 };
+            }
+            if (escapeSequenceEquals(chunk.sequence, shiftTabSequence)) {
+              return {
+                type: "key",
+                key: "Tab",
+                modifiers: ["Shift"],
+              };
+            }
+            if (escapeSequenceEquals(chunk.sequence, pageDownSequence)) {
+              return { type: "scroll", amount: state.rows };
+            }
+            if (escapeSequenceEquals(chunk.sequence, pageUpSequence)) {
+              return { type: "scroll", amount: -state.rows };
+            }
+            if (escapeSequenceEquals(chunk.sequence, homeSequence)) {
+              return { type: "scrollToTop" };
+            }
+            if (escapeSequenceEquals(chunk.sequence, endSequence)) {
+              return { type: "scrollToBottom" };
+            }
+          }
         }
         break;
-      }
-      case "escape-sequence": {
-        if (escapeSequenceEquals(chunk.sequence, keyUpSequence)) {
-          return { type: "scroll", amount: -1 };
-        }
-        if (escapeSequenceEquals(chunk.sequence, keyDownSequence)) {
-          return { type: "scroll", amount: 1 };
-        }
-        if (escapeSequenceEquals(chunk.sequence, shiftTabSequence)) {
-          return {
-            type: "key",
-            key: "Tab",
-            modifiers: ["Shift"],
-          };
-        }
-        if (escapeSequenceEquals(chunk.sequence, pageDownSequence)) {
-          return { type: "scroll", amount: state.rows };
-        }
-        if (escapeSequenceEquals(chunk.sequence, pageUpSequence)) {
-          return { type: "scroll", amount: -state.rows };
-        }
-        if (escapeSequenceEquals(chunk.sequence, homeSequence)) {
-          return { type: "scrollToTop" };
-        }
-        if (escapeSequenceEquals(chunk.sequence, endSequence)) {
-          return { type: "scrollToBottom" };
-        }
       }
     }
     return undefined;

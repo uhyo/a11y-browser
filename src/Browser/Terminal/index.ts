@@ -24,9 +24,10 @@ export class Terminal {
       if (res === null) {
         return;
       }
+      const inputStr: string = res.toString("utf8");
       const chunks: InputChunk[] = [];
-      for (let i = 0; i < res.length; i++) {
-        const value = String(res).charCodeAt(i);
+      for (let i = 0; i < inputStr.length; i++) {
+        const value = inputStr.charCodeAt(i);
         const parsed = this.#inputChunkParser.next(value);
         if (parsed.done) {
           throw new Error("Unexpected end of input");
@@ -136,9 +137,10 @@ export class Terminal {
     this.input.on("readable", this.#readableListener);
     this.input.on("end", this.#endListener);
     this.input.on("error", this.#errorListener);
+    this.input.resume();
   }
 
-  public destroy() {
+  public stop() {
     this.input.setRawMode(false);
     this.input.removeListener("readable", this.#readableListener);
     this.input.removeListener("end", this.#endListener);

@@ -1,11 +1,15 @@
+import enquirer from "enquirer";
 import { performance } from "perf_hooks";
 import { Page } from "puppeteer";
+import { inspect } from "util";
 import { default as wrapAnsi } from "wrap-ansi";
+import { AXNode } from "../AccessibilityTree/AccessibilityNode.js";
 import { AccessibilityTree } from "../AccessibilityTree/index.js";
 import { globalLogger } from "../Logger/global.js";
 import { render } from "../Renderer/index.js";
 import { defaultTheme, RenderContext } from "../Renderer/RenderContext.js";
 import { constructUITree } from "../UITree/index.js";
+import { getProperty } from "../UITree/nodeRenderers.js";
 import { UINode } from "../UITree/UINode.js";
 import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
@@ -136,6 +140,18 @@ export async function browserMain(
               }
               break;
             }
+            case "switchToInputMode": {
+              // In order to switch to Input Mode, an editable element must be focused.
+              const focusedNode = lastRenderingResult?.focusedNode?.rawNode;
+              if (!focusedNode) {
+                break;
+              }
+              globalLogger.debug(inspect(focusedNode, { depth: 10 }));
+              const userInput = await getUserInput(focusedNode);
+              globalLogger.debug(`userInput = ${userInput}`);
+              renderScreen(false);
+              break;
+            }
           }
           break;
         }
@@ -187,8 +203,33 @@ export async function browserMain(
     cleanup2();
     cleanup3();
     await cleanup4();
-    terminal.destroy();
+    terminal.stop();
     await acc.dispose();
+  }
+
+  async function getUserInput(targetNode: AXNode): Promise<string> {
+    // const editable = getProperty(targetNode, "editable", "");
+    const multiline = !!getProperty(targetNode, "multiline", false);
+    const valueText = String(getProperty(targetNode, "valuetext", ""));
+    terminal.stop();
+
+    setCursorPosition(tty, 0, 0);
+    // clear to the bottom of the screen
+    tty.write("\x1b[0J");
+    try {
+      const p = (await enquirer.prompt([
+        {
+          type: "input",
+          initial: valueText,
+          multiline,
+          name: "input",
+          message: targetNode.name?.value ?? "input",
+        },
+      ])) as { input: string };
+      return p.input;
+    } finally {
+      terminal.start();
+    }
   }
 
   function scrollTo(start: number, end: number) {
@@ -307,15 +348,22 @@ export async function browserMain(
     setCursorPosition(tty, rows - 1, 0);
     // Render last line
     const lastLine =
-      wrapAnsi(
-        renderingTheme.url(`🌐 ${page.url()}`) + "\x1b[K",
-        state.columns,
-        {
-          hard: true,
-          wordWrap: false,
-        }
-      ).split("\n")[0] ?? "";
+      wrapAnsi(getLastLine() + "\x1b[K", state.columns, {
+        hard: true,
+        wordWrap: false,
+      }).split("\n")[0] ?? "";
     tty.write(lastLine);
+
+    function getLastLine(): string {
+      switch (state.mode.type) {
+        case "normal": {
+          return renderingTheme.url(`🌐 ${page.url()}`);
+        }
+        case "input": {
+          return "⌨️ INPUT MODE";
+        }
+      }
+    }
   }
 
   function getBrowsingAreaHeight() {

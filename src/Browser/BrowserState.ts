@@ -1,3 +1,11 @@
+export type BrowserMode =
+  | {
+      type: "normal";
+    }
+  | {
+      type: "input";
+    };
+
 export type BrowserState = {
   /**
    * width of the terminal window.
@@ -11,6 +19,10 @@ export type BrowserState = {
    * Y offset of the screen.
    */
   scrollY: number;
+  /**
+   * Mode of the browser.
+   */
+  mode: BrowserMode;
 };
 
 export function createDefaultBrowserState(): BrowserState {
@@ -18,5 +30,8 @@ export function createDefaultBrowserState(): BrowserState {
     columns: 0,
     rows: 0,
     scrollY: 0,
+    mode: {
+      type: "normal",
+    },
   };
 }

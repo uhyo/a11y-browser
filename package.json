@@ -22,6 +22,7 @@
   "dependencies": {
     "arg": "^5.0.2",
     "chalk": "^5.0.1",
+    "enquirer": "^2.3.6",
     "puppeteer": "^15.3.0",
     "string-width": "^5.1.2",
     "terminfo": "^0.1.1",
