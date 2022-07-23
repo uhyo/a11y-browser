@@ -36,12 +36,16 @@ export function* frameRenderer(
       indentStrings.pop();
       continue;
     }
-    yield* mapIterator(
-      wrapAnsi(line, width - indentSizeStack.sum - 1, {
-        hard: true,
-        wordWrap: false,
-      }).split("\n"),
-      (line) => " " + indentStrings.result + line
-    );
+    if (Number.isFinite(width)) {
+      yield* mapIterator(
+        wrapAnsi(line, width - indentSizeStack.sum - 1, {
+          hard: true,
+          wordWrap: false,
+        }).split("\n"),
+        (line) => " " + indentStrings.result + line
+      );
+    } else {
+      yield " " + indentStrings.result + line;
+    }
   }
 }
