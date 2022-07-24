@@ -1,4 +1,6 @@
 import { KeyInput } from "puppeteer";
+import { getProperty } from "../UITree/nodeRenderers.js";
+import { UINode } from "../UITree/UINode.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
 import { BrowserState } from "./BrowserState.js";
 import { InputChunk } from "./Terminal/inputChunkParser.js";
@@ -9,7 +11,7 @@ type Command =
   | { type: "scrollToTop" }
   | { type: "scrollToBottom" }
   | { type: "key"; key: KeyInput; modifiers?: KeyInput[] }
-  | { type: "switchToInputMode" };
+  | { type: "switchToInputMode"; target: UINode };
 
 export function mapInputToCommand(
   state: BrowserState,
@@ -29,19 +31,33 @@ export function mapInputToCommand(
                   type: "key",
                   key: "Tab",
                 };
-              case 13: // enter
+              case 13: {
+                // enter
+
+                // If an editable node is focused, switch to input mode.
+                if (state.focusedNode?.rawNode !== undefined) {
+                  const editable = getProperty(
+                    state.focusedNode.rawNode,
+                    "editable",
+                    ""
+                  );
+                  if (editable) {
+                    return {
+                      type: "switchToInputMode",
+                      target: state.focusedNode,
+                    };
+                  }
+                }
+
                 return {
                   type: "key",
                   key: "Enter",
                 };
+              }
               case 32: // space
                 return {
                   type: "key",
                   key: " ",
-                };
-              case 0x69: // i
-                return {
-                  type: "switchToInputMode",
                 };
             }
             break;

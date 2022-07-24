@@ -82,7 +82,7 @@ export async function update(
   for (const id of affectedParentIds) {
     const parent = nodeMap.get(id);
     if (parent === undefined) {
-      throw new Error(`Parent not found: ${id}`);
+      continue;
     }
     parent.children = parent.children.map((x) => {
       const child = nodeMap.get(x.id);

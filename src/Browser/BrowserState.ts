@@ -1,3 +1,5 @@
+import { UINode } from "../UITree/UINode.js";
+
 export type BrowserMode =
   | {
       type: "normal";
@@ -23,6 +25,10 @@ export type BrowserState = {
    * Mode of the browser.
    */
   mode: BrowserMode;
+  /**
+   * Focused node.
+   */
+  focusedNode: UINode | undefined;
 };
 
 export function createDefaultBrowserState(): BrowserState {
@@ -33,5 +39,6 @@ export function createDefaultBrowserState(): BrowserState {
     mode: {
       type: "normal",
     },
+    focusedNode: undefined,
   };
 }

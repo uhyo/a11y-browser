@@ -101,6 +101,8 @@ export async function browserMain(
   let lastRenderingResult: RenderResult | undefined;
   try {
     renderScreen(true);
+    // TODO: state is duplicated
+    state.focusedNode = lastRenderingResult?.focusedNode;
     mainLoop: for await (const event of eventsStream) {
       switch (event.type) {
         case "command": {
@@ -143,7 +145,7 @@ export async function browserMain(
             }
             case "switchToInputMode": {
               // In order to switch to Input Mode, an editable element must be focused.
-              const focusedNode = lastRenderingResult?.focusedNode?.rawNode;
+              const focusedNode = command.target.rawNode;
               if (!focusedNode) {
                 break;
               }
@@ -225,7 +227,7 @@ export async function browserMain(
   async function getUserInput(targetNode: AXNode): Promise<string> {
     // const editable = getProperty(targetNode, "editable", "");
     const multiline = !!getProperty(targetNode, "multiline", false);
-    const valueText = String(getProperty(targetNode, "valuetext", ""));
+    const valueText = targetNode.value?.value ?? "";
     terminal.stop();
 
     setCursorPosition(tty, 0, 0);
@@ -235,7 +237,8 @@ export async function browserMain(
       const p = (await enquirer.prompt([
         {
           type: "input",
-          initial: valueText,
+          // @ts-expect-error `input` does not exist in type definition but it can set initial value of input.
+          input: valueText,
           multiline,
           name: "input",
           message: targetNode.name?.value ?? "input",
