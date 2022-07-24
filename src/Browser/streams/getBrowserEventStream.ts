@@ -1,6 +1,7 @@
 import Protocol from "devtools-protocol";
 import { EventEmitter, on } from "events";
 import { Page } from "puppeteer";
+import { globalLogger } from "../../Logger/global.js";
 import { mapAsync } from "../../util/asyncIterator/mapAsync.js";
 
 export type BrowserEvent =
@@ -26,6 +27,7 @@ export async function getBrowserEventStream(
   cdp.on(
     "Page.lifecycleEvent",
     (ev: Protocol.Protocol.Page.LifecycleEventEvent) => {
+      globalLogger.debug("lifecycleEvent", ev);
       if (ev.name === "navigation") {
         // Top-level frame
         emit({

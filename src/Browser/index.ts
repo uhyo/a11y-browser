@@ -104,6 +104,7 @@ export async function browserMain(
     // TODO: state is duplicated
     state.focusedNode = lastRenderingResult?.focusedNode;
     mainLoop: for await (const event of eventsStream) {
+      state.focusedNode = lastRenderingResult?.focusedNode;
       switch (event.type) {
         case "command": {
           const { command } = event;

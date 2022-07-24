@@ -64,6 +64,7 @@ export class AccessibilityTree {
   }
 
   public async reconstruct(): Promise<void> {
+    globalLogger.debug("reconstruct");
     const res = await this.#cdp.send("Accessibility.getRootAXNode");
 
     const nodes = await asyncIteratorToArray(
