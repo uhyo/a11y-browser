@@ -1,5 +1,6 @@
 import EventEmitter, { on } from "events";
 import { Page, ProtocolMapping } from "puppeteer";
+import { globalLogger } from "../../Logger/global.js";
 import { filterMapAsync } from "../../util/asyncIterator/filterMapAsync.js";
 
 export type CDPEvent = keyof ProtocolMapping.Events extends infer Ev
@@ -61,6 +62,7 @@ export async function getCDPEventsStream(
   const cdpOn: CDPOn = (type) => {
     return filterMapAsync(on(ev, evName), ([event]) => {
       if (event.event === type) {
+        globalLogger.debug(`CDPEvent: ${type}`);
         return event;
       }
       return undefined;

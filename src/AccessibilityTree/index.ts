@@ -21,6 +21,10 @@ type State =
   | {
       mode: "updating";
       abortController: AbortController;
+    }
+  | {
+      // state between documentUpdated and domContentEventFired
+      mode: "documentLoading";
     };
 
 /**
@@ -46,6 +50,7 @@ export class AccessibilityTree {
   }: Protocol.Protocol.Accessibility.NodesUpdatedEvent): void => {
     if (this.#state.mode !== "idle") {
       // Not listening to node updates
+      globalLogger.debug("Node updates discarded", this.#state.mode, nodes);
       return;
     }
     const abortController = new AbortController();
@@ -106,7 +111,7 @@ export class AccessibilityTree {
       this.#state.abortController.abort();
     }
     this.#state = {
-      mode: "idle",
+      mode: "documentLoading",
     };
   }
 
@@ -158,6 +163,9 @@ export class AccessibilityTree {
 
   public async reconstruct(): Promise<void> {
     globalLogger.debug("reconstruct");
+    if (this.#state.mode === "updating") {
+      this.#state.abortController.abort();
+    }
     const abortController = new AbortController();
     this.#state = {
       mode: "updating",
@@ -176,6 +184,7 @@ export class AccessibilityTree {
       this.#nodes = new Map();
       convert(joinIterables([res.node], nodes), this.#nodes);
       this.#rootNode = this.#nodes.get(res.node.nodeId);
+      globalLogger.debug("rootNode", this.#rootNode);
       this.treeEvent.emit("update");
     } catch (error) {
       if (signal.aborted) {
