@@ -25,15 +25,12 @@ export async function getBrowserEventStream(
   await cdp.send("Page.enable");
 
   cdp.on(
-    "Page.lifecycleEvent",
-    (ev: Protocol.Protocol.Page.LifecycleEventEvent) => {
-      globalLogger.debug("lifecycleEvent", ev);
-      if (ev.name === "navigation") {
-        // Top-level frame
-        emit({
-          type: "navigated",
-          url: page.url(),
-        });
+    "Page.frameNavigated",
+    (ev: Protocol.Protocol.Page.FrameNavigatedEvent) => {
+      globalLogger.debug("frameNavigated", ev);
+      if (ev.frame.url === page.url()) {
+        // Maybe top-level frame
+        emit({ type: "navigated", url: ev.frame.url });
       }
     }
   );

@@ -14,6 +14,7 @@ import { UINode } from "../UITree/UINode.js";
 import { mapAsync } from "../util/asyncIterator/mapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { createDefaultBrowserState } from "./BrowserState.js";
+import { getCDPEventsStream } from "./CDPEvents/index.js";
 import { mapInputToCommand } from "./commands.js";
 import { frameRenderer } from "./frameRenderer.js";
 import { getAXNodeUpdateStream } from "./streams/AXNodeUpdateStream.js";
@@ -34,9 +35,8 @@ export async function browserMain(
   page: Page,
   tty: NodeJS.WriteStream
 ): Promise<void> {
-  const cdp = await page.target().createCDPSession();
-  await cdp.send("DOM.enable");
-  const acc = new AccessibilityTree(cdp);
+  const [cdp, cleanupCdp] = await getCDPEventsStream(page);
+  const acc = new AccessibilityTree(page, cdp);
   const startTime = performance.now();
   await acc.initialize();
   const endTime = performance.now();
@@ -217,6 +217,7 @@ export async function browserMain(
       }
     }
   } finally {
+    await cleanupCdp();
     cleanup();
     cleanup2();
     cleanup3();

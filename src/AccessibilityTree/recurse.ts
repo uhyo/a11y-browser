@@ -1,18 +1,23 @@
-import { CDPSession } from "puppeteer";
+import { CDPObject } from "../Browser/CDPEvents/index.js";
+import { checkAbort } from "../util/abort.js";
 import { AXNode } from "./AccessibilityNode.js";
 
 /**
  * Recurse until whole tree is fetched.
  */
 export async function* recurse(
-  cdp: CDPSession,
+  signal: AbortSignal,
+  cdp: CDPObject,
   parent: AXNode
 ): AsyncGenerator<AXNode | undefined, void, unknown> {
   // fetch children
+  checkAbort(signal);
   const { nodes } = await cdp.send("Accessibility.getChildAXNodes", {
     id: parent.nodeId,
   });
+  checkAbort(signal);
   yield;
+  checkAbort(signal);
   // According to experimental results, children of node with `ignored: false` are not included in the result.
   const recs = await Promise.all(
     nodes.map(async (node) => {
@@ -21,7 +26,7 @@ export async function* recurse(
           node,
         };
       }
-      const gen = recurse(cdp, node);
+      const gen = recurse(signal, cdp, node);
       await gen.next();
       return {
         node,

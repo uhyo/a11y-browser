@@ -1,5 +1,5 @@
-import { CDPSession } from "puppeteer";
 import { inspect } from "util";
+import { CDPObject } from "../Browser/CDPEvents/index.js";
 import { globalLogger } from "../Logger/global.js";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
@@ -13,7 +13,8 @@ import { recurse } from "./recurse.js";
  * Apply update to the accessibility tree.
  */
 export async function update(
-  cdp: CDPSession,
+  signal: AbortSignal,
+  cdp: CDPObject,
   nodeMap: Map<string, AccessibilityNode>,
   updates: readonly AXNode[]
 ): Promise<void> {
@@ -50,7 +51,7 @@ export async function update(
   }
   const gens = await Promise.all(
     parentsWithLackedChildren.map(async (node) => {
-      const gen = recurse(cdp, node);
+      const gen = recurse(signal, cdp, node);
       await gen.next();
       return gen;
     })
