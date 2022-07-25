@@ -4,27 +4,24 @@ import { Page } from "puppeteer";
 import { debounce } from "throttle-debounce";
 import { CDPObject } from "../Browser/CDPEvents/index.js";
 import { globalLogger } from "../Logger/global.js";
-import { checkAbort, ignoreAbort } from "../util/abort.js";
+import { checkAbort } from "../util/abort.js";
 import { asyncIteratorToArray } from "../util/asyncIterator/asyncIteratorToArray.js";
 import { filterMapAsync } from "../util/asyncIterator/filterMapAsync.js";
 import { mergeAsync } from "../util/asyncIterator/mergeAsync.js";
 import { joinIterables } from "../util/iterator/joinIterables.js";
-import { AccessibilityNode } from "./AccessibilityNode.js";
+import { TaskQueue } from "../util/TaskQueue/index.js";
+import { AccessibilityNode, AXNode } from "./AccessibilityNode.js";
 import { convert } from "./convert.js";
 import { recurse } from "./recurse.js";
 import { update } from "./update.js";
 
-type State =
+type Task =
   | {
-      mode: "idle";
+      type: "update";
+      nodes: AXNode[];
     }
   | {
-      mode: "updating";
-      abortController: AbortController;
-    }
-  | {
-      // state between documentUpdated and domContentEventFired
-      mode: "documentLoading";
+      type: "reconstruct";
     };
 
 /**
@@ -35,84 +32,116 @@ export class AccessibilityTree {
   #cdp: CDPObject;
   #cleanupEvents: (() => void) | undefined;
   #rootNode: AccessibilityNode | undefined;
-  #state: State = {
-    mode: "idle",
-  };
+  #taskQueue = new TaskQueue<Task>();
+  #runningTask = new Set<{
+    task: Task;
+    controller: AbortController;
+  }>();
 
   readonly treeEvent = new EventEmitter();
 
   constructor(page: Page, cdp: CDPObject) {
     this.#cdp = cdp;
+    this.#taskQueue.event.on("readable", this.#handleTask.bind(this));
   }
+
+  #handleTask = () => {
+    const taskObj = this.#taskQueue.take();
+    if (taskObj === undefined) {
+      return;
+    }
+    const { controller, task } = taskObj;
+    const { signal } = controller;
+    if (signal.aborted) {
+      return;
+    }
+    const runningTask = { task, controller };
+    this.#runningTask.add(runningTask);
+    (async () => {
+      switch (task.type) {
+        case "update": {
+          try {
+            await update(signal, this.#cdp, this.#nodes, task.nodes);
+            if (signal.aborted) {
+              return;
+            }
+            const rootWebArea = task.nodes.find(
+              (node) => node.role?.value === "RootWebArea"
+            );
+            if (rootWebArea) {
+              this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
+            }
+            this.treeEvent.emit("update");
+          } catch (err) {
+            if (signal.aborted) {
+              return;
+            }
+            // Protocol error may happen when navigated during the update.
+            // In this case, we attempt to initialize again.
+            globalLogger.error(err);
+            this.#debouncedReconstruct();
+          }
+          break;
+        }
+        case "reconstruct": {
+          try {
+            await this.reconstruct();
+          } catch (err) {
+            if (signal.aborted) {
+              return;
+            }
+            globalLogger.error(err);
+          }
+          break;
+        }
+      }
+    })().finally(() => {
+      this.#runningTask.delete(runningTask);
+      queueMicrotask(() => {
+        this.#handleTask();
+      });
+    });
+  };
 
   #nodeUpdateHandler = ({
     nodes,
   }: Protocol.Protocol.Accessibility.NodesUpdatedEvent): void => {
-    if (this.#state.mode !== "idle") {
-      // Not listening to node updates
-      globalLogger.debug("Node updates discarded", this.#state.mode, nodes);
-      return;
-    }
-    const abortController = new AbortController();
-    this.#state = {
-      mode: "updating",
-      abortController,
-    };
-
-    update(abortController.signal, this.#cdp, this.#nodes, nodes)
-      .then(() => {
-        this.#state = {
-          mode: "idle",
-        };
-        if (abortController.signal.aborted) {
-          return;
-        }
-        const rootWebArea = nodes.find(
-          (node) => node.role?.value === "RootWebArea"
-        );
-        if (rootWebArea) {
-          this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
-        }
-        this.treeEvent.emit("update");
-      }, ignoreAbort)
-      .catch((err) => {
-        if (abortController.signal.aborted) {
-          return;
-        }
-        // Protocol error may happen when navigated during the update.
-        // In this case, we attempt to initialize again.
-        globalLogger.error(err);
-        this.#state = {
-          mode: "idle",
-        };
-        this.#debouncedReconstruct();
-      });
+    this.#taskQueue.push({
+      type: "update",
+      nodes,
+    });
   };
 
   #domContentEvnetHandler = () => {
     globalLogger.debug("domContentEvent");
-    this.#debouncedReconstruct();
+    this.#taskQueue.push({
+      type: "reconstruct",
+    });
   };
 
   #debouncedReconstruct = debounce(
     500,
-    () =>
-      this.reconstruct().catch((err) => {
-        this.treeEvent.emit("error", err);
-      }),
+    () => {
+      this.#taskQueue.push({
+        type: "reconstruct",
+      });
+    },
     {
       atBegin: false,
     }
   );
 
   #documentUpdated(): void {
-    globalLogger.debug("documentUpdated", this.#state);
-    if (this.#state.mode === "updating") {
-      this.#state.abortController.abort();
+    globalLogger.debug("documentUpdated");
+    // When DOM.documentUpdated is fired, existing accessibility nodes may be invalidated.
+    // Therefore, we abort all running tasks and wait for DOMContentLoaded.
+    this.#abortRunningTasks();
+  }
+
+  #abortRunningTasks(): void {
+    for (const { controller } of this.#runningTask) {
+      controller.abort();
     }
-    this.#state = {
-      mode: "documentLoading",
-    };
   }
 
   async *#listenToCDPEvents() {
@@ -161,16 +190,10 @@ export class AccessibilityTree {
     })();
   }
 
-  public async reconstruct(): Promise<void> {
+  public async reconstruct(
+    abortController: AbortController = new AbortController()
+  ): Promise<void> {
     globalLogger.debug("reconstruct");
-    if (this.#state.mode === "updating") {
-      this.#state.abortController.abort();
-    }
-    const abortController = new AbortController();
-    this.#state = {
-      mode: "updating",
-      abortController,
-    };
     const signal = abortController.signal;
     try {
       const res = await this.#cdp.send("Accessibility.getRootAXNode");
@@ -179,6 +202,7 @@ export class AccessibilityTree {
       const nodes = await asyncIteratorToArray(
         filterMapAsync(recurse(signal, this.#cdp, res.node), (x) => x)
       );
+      checkAbort(signal);
 
       // console.log(inspect(nodes, { depth: 10 }));
       this.#nodes = new Map();
@@ -191,17 +215,11 @@ export class AccessibilityTree {
         return;
       }
       throw error;
-    } finally {
-      this.#state = {
-        mode: "idle",
-      };
     }
   }
 
   public async dispose(): Promise<void> {
-    if (this.#state.mode === "updating") {
-      this.#state.abortController.abort();
-    }
+    this.#abortRunningTasks();
     this.#cleanupEvents?.();
     this.#nodes.clear();
   }
