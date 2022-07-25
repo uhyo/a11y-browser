@@ -46,60 +46,54 @@ export class AccessibilityTree {
   }
 
   #handleTask = () => {
-    const taskObj = this.#taskQueue.take();
-    if (taskObj === undefined) {
-      return;
-    }
-    const { controller, task } = taskObj;
-    const { signal } = controller;
-    if (signal.aborted) {
-      return;
-    }
-    const runningTask = { task, controller };
-    this.#runningTask.add(runningTask);
-    (async () => {
-      switch (task.type) {
-        case "update": {
-          try {
-            await update(signal, this.#cdp, this.#nodes, task.nodes);
-            if (signal.aborted) {
-              return;
-            }
-            const rootWebArea = task.nodes.find(
-              (node) => node.role?.value === "RootWebArea"
-            );
-            if (rootWebArea) {
-              this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
-            }
-            this.treeEvent.emit("update");
-          } catch (err) {
-            if (signal.aborted) {
-              return;
-            }
-            // Protocol error may happen when navigated during the update.
-            // In this case, we attempt to initialize again.
-            globalLogger.error(err);
-            this.#debouncedReconstruct();
-          }
-          break;
-        }
-        case "reconstruct": {
-          try {
-            await this.reconstruct();
-          } catch (err) {
-            if (signal.aborted) {
-              return;
-            }
-            globalLogger.error(err);
-          }
-          break;
-        }
+    this.#taskQueue.take(async ({ controller, task }) => {
+      const { signal } = controller;
+      if (signal.aborted) {
+        return;
       }
-    })().finally(() => {
-      this.#runningTask.delete(runningTask);
-      queueMicrotask(() => {
-        this.#handleTask();
-      });
+      const runningTask = { task, controller };
+      this.#runningTask.add(runningTask);
+      try {
+        switch (task.type) {
+          case "update": {
+            try {
+              await update(signal, this.#cdp, this.#nodes, task.nodes);
+              if (signal.aborted) {
+                return;
+              }
+              const rootWebArea = task.nodes.find(
+                (node) => node.role?.value === "RootWebArea"
+              );
+              if (rootWebArea) {
+                this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
+              }
+              this.treeEvent.emit("update");
+            } catch (err) {
+              if (signal.aborted) {
+                return;
+              }
+              // Protocol error may happen when navigated during the update.
+              // In this case, we attempt to initialize again.
+              globalLogger.error(err);
+              this.#debouncedReconstruct();
+            }
+            break;
+          }
+          case "reconstruct": {
+            try {
+              await this.reconstruct();
+            } catch (err) {
+              if (signal.aborted) {
+                return;
+              }
+              globalLogger.error(err);
+            }
+            break;
+          }
+        }
+      } finally {
+        this.#runningTask.delete(runningTask);
+      }
     });
   };
 
@@ -210,6 +204,7 @@ export class AccessibilityTree {
       this.#rootNode = this.#nodes.get(res.node.nodeId);
       globalLogger.debug("rootNode", this.#rootNode);
       this.treeEvent.emit("update");
+      globalLogger.debug("reconstruct done");
     } catch (error) {
       if (signal.aborted) {
         return;
