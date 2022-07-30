@@ -27,9 +27,9 @@ export type CDPObject = {
 };
 
 const listenedEvents: (keyof ProtocolMapping.Events)[] = [
+  "Accessibility.loadComplete",
   "Accessibility.nodesUpdated",
   "Page.navigatedWithinDocument",
-  "Page.domContentEventFired",
   "DOM.documentUpdated",
 ];
 

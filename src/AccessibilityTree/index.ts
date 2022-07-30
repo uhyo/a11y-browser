@@ -22,6 +22,7 @@ type Task =
     }
   | {
       type: "reconstruct";
+      newRoot?: AXNode;
     };
 
 /**
@@ -81,7 +82,7 @@ export class AccessibilityTree {
           }
           case "reconstruct": {
             try {
-              await this.reconstruct();
+              await this.reconstruct(task.newRoot);
             } catch (err) {
               if (signal.aborted) {
                 return;
@@ -106,10 +107,11 @@ export class AccessibilityTree {
     });
   };
 
-  #domContentEvnetHandler = () => {
+  #loadCompleteEventHandler = (newRoot: AXNode) => {
     globalLogger.debug("domContentEvent");
     this.#taskQueue.push({
       type: "reconstruct",
+      newRoot,
     });
   };
 
@@ -140,8 +142,8 @@ export class AccessibilityTree {
 
   async *#listenToCDPEvents() {
     for await (const event of mergeAsync(
+      this.#cdp.on("Accessibility.loadComplete"),
       this.#cdp.on("Accessibility.nodesUpdated"),
-      this.#cdp.on("Page.domContentEventFired"),
       this.#cdp.on("DOM.documentUpdated")
     )) {
       switch (event.event) {
@@ -149,8 +151,8 @@ export class AccessibilityTree {
           this.#nodeUpdateHandler(event.payload);
           break;
         }
-        case "Page.domContentEventFired": {
-          this.#domContentEvnetHandler();
+        case "Accessibility.loadComplete": {
+          this.#loadCompleteEventHandler(event.payload.root);
           break;
         }
         case "DOM.documentUpdated": {
@@ -166,7 +168,7 @@ export class AccessibilityTree {
    */
   public async initialize(): Promise<void> {
     this.#nodes.clear();
-    await this.reconstruct();
+    await this.reconstruct(undefined);
 
     this.#cleanupEvents = (() => {
       const iter = this.#listenToCDPEvents();
@@ -185,23 +187,29 @@ export class AccessibilityTree {
   }
 
   public async reconstruct(
+    newRoot: AXNode | undefined,
     abortController: AbortController = new AbortController()
   ): Promise<void> {
     globalLogger.debug("reconstruct");
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
+    globalLogger.debug("reconstruct start");
     const signal = abortController.signal;
     try {
-      const res = await this.#cdp.send("Accessibility.getRootAXNode");
-      checkAbort(signal);
+      if (newRoot === undefined) {
+        const res = await this.#cdp.send("Accessibility.getRootAXNode");
+        checkAbort(signal);
+        newRoot = res.node;
+      }
 
       const nodes = await asyncIteratorToArray(
-        filterMapAsync(recurse(signal, this.#cdp, res.node), (x) => x)
+        filterMapAsync(recurse(signal, this.#cdp, newRoot), (x) => x)
       );
       checkAbort(signal);
 
       // console.log(inspect(nodes, { depth: 10 }));
       this.#nodes = new Map();
-      convert(joinIterables([res.node], nodes), this.#nodes);
-      this.#rootNode = this.#nodes.get(res.node.nodeId);
+      convert(joinIterables([newRoot], nodes), this.#nodes);
+      this.#rootNode = this.#nodes.get(newRoot.nodeId);
       globalLogger.debug("rootNode", this.#rootNode);
       this.treeEvent.emit("update");
       globalLogger.debug("reconstruct done");
