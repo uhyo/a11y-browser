@@ -1,6 +1,7 @@
 import { inspect } from "util";
 import { AccessibilityNode } from "../AccessibilityTree/AccessibilityNode.js";
 import { globalLogger } from "../Logger/global.js";
+import { assertNever } from "../util/assertNever.js";
 import {
   buttonInline,
   codeHeader,
@@ -28,12 +29,18 @@ import {
   renderNothing,
   textInline,
 } from "./nodeRenderers.js";
-import { InlineUINode, UINode, UINodeBase } from "./UINode.js";
+import {
+  InlineUINode,
+  IntermediateUINode,
+  isUINode,
+  UINode,
+  UINodeBase,
+} from "./UINode.js";
 
 const emptyArray: readonly [] = [];
 
 export function constructUITree(node: AccessibilityNode): UINode {
-  const result = constructUITreeRec(node);
+  const result = constructUITreeRec(node).map(toNonIntermediateUINode);
   if (result.length === 1) {
     return result[0]!;
   }
@@ -47,7 +54,7 @@ export function constructUITree(node: AccessibilityNode): UINode {
   };
 }
 
-function constructUITreeRec(node: AccessibilityNode): UINode[] {
+function constructUITreeRec(node: AccessibilityNode): IntermediateUINode[] {
   const children = node.children.flatMap((child) => constructUITreeRec(child));
 
   const uiNode = convertNode(node, children);
@@ -77,7 +84,7 @@ function constructUITreeRec(node: AccessibilityNode): UINode[] {
   return [uiNode as UINode];
 }
 
-type UINodeWithoutBase = UINode extends infer U
+type IntermediateUINodeWithoutBase = IntermediateUINode extends infer U
   ? U extends infer V
     ? Omit<V, keyof UINodeBase>
     : never
@@ -85,12 +92,44 @@ type UINodeWithoutBase = UINode extends infer U
 
 function convertNode(
   node: AccessibilityNode,
-  children: readonly UINode[]
-): UINodeWithoutBase | undefined {
+  rawChildren: readonly IntermediateUINode[]
+): IntermediateUINodeWithoutBase | undefined {
   const { rawNode, role } = node;
   if (rawNode.ignored) {
     return undefined;
   }
+  switch (role) {
+    case "table": {
+      return {
+        type: "table",
+        rows: rawChildren.flatMap((child) => {
+          if (child.type === "row") {
+            return [child];
+          }
+          return [];
+        }),
+      };
+    }
+    case "row": {
+      return {
+        type: "row",
+        cells: rawChildren.flatMap((child) => {
+          if (child.type === "cell") {
+            return [child];
+          }
+          return [];
+        }),
+      };
+    }
+    case "cell": {
+      return {
+        type: "cell",
+        children: rawChildren.map(toNonIntermediateUINode),
+      };
+    }
+  }
+  // Other roles do not need handling of intermediate nodes.
+  const children = rawChildren.map(toNonIntermediateUINode);
   switch (role) {
     case "none":
     case "IframePresentational":
@@ -294,4 +333,33 @@ function getBlockList(nodes: readonly UINode[]): UINode[] {
 
 function isInlineNode(node: UINode): node is InlineUINode {
   return node.type === "inline";
+}
+
+function toNonIntermediateUINode(node: IntermediateUINode): UINode {
+  if (isUINode(node)) {
+    return node;
+  }
+  switch (node.type) {
+    case "row": {
+      return {
+        type: "block",
+        render: genericBlock,
+        children: node.cells.map(toNonIntermediateUINode),
+        focused: node.focused,
+        rawNode: node.rawNode,
+      };
+    }
+    case "cell": {
+      return {
+        type: "inline",
+        render: genericInline,
+        children: node.children.map(toNonIntermediateUINode),
+        focused: node.focused,
+        rawNode: node.rawNode,
+      };
+    }
+    default: {
+      assertNever(node);
+    }
+  }
 }

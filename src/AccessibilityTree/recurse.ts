@@ -1,5 +1,4 @@
 import { CDPObject } from "../Browser/CDPEvents/index.js";
-import { globalLogger } from "../Logger/global.js";
 import { checkAbort } from "../util/abort.js";
 import { AXNode } from "./AccessibilityNode.js";
 
@@ -36,7 +35,6 @@ export async function* recurse(
     })
   );
   for (const { node, gen } of recs) {
-    globalLogger.debug("recurse", node.nodeId);
     yield node;
     if (gen) {
       yield* gen;

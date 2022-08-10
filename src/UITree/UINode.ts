@@ -1,5 +1,6 @@
 import { AXNode } from "../AccessibilityTree/AccessibilityNode.js";
 import { RenderContext } from "../Renderer/RenderContext.js";
+import { IsNever } from "../util/types/IsNerver.js";
 
 export type StandaloneRenderer = (
   context: RenderContext,
@@ -36,15 +37,30 @@ export type BlockUINode = UINodeBase & {
   children: readonly UINode[];
 };
 
+export type InlineUINode = UINodeBase & {
+  type: "inline";
+  render: ParentRenderer;
+  children: readonly UINode[];
+};
+
 export type ListItemUINode = UINodeBase & {
   type: "listitem";
   renderMarker: StandaloneRenderer;
   children: readonly UINode[];
 };
 
-export type InlineUINode = UINodeBase & {
-  type: "inline";
-  render: ParentRenderer;
+export type TableUINode = UINodeBase & {
+  type: "table";
+  rows: readonly RowUINode[];
+};
+
+export type RowUINode = UINodeBase & {
+  type: "row";
+  cells: readonly CellUINode[];
+};
+
+export type CellUINode = UINodeBase & {
+  type: "cell";
   children: readonly UINode[];
 };
 
@@ -52,4 +68,30 @@ export type UINode =
   | WrapperUINode
   | BlockUINode
   | ListItemUINode
-  | InlineUINode;
+  | InlineUINode
+  | TableUINode;
+
+export type IntermediateUINode = UINode | RowUINode | CellUINode;
+
+export function allTypesOfUINode<Arr extends readonly string[]>(
+  arr: [...Arr]
+): IsNever<Exclude<UINode["type"], Arr[number]>> extends true
+  ? IsNever<Exclude<Arr[number], UINode["type"]>> extends true
+    ? Arr
+    : unknown
+  : unknown {
+  return arr;
+}
+
+const allUINodeTypes = allTypesOfUINode([
+  "wrapper",
+  "block",
+  "inline",
+  "listitem",
+  "table",
+]);
+
+export function isUINode(node: IntermediateUINode): node is UINode {
+  const types: readonly IntermediateUINode["type"][] = allUINodeTypes;
+  return types.includes(node.type);
+}
