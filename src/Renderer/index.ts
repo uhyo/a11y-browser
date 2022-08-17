@@ -10,7 +10,11 @@ export function* render(
   node: UINode,
   context: RenderContext
 ): IterableIterator<string> {
-  if (node.type === "wrapper" || node.type === "block") {
+  if (
+    node.type === "wrapper" ||
+    node.type === "block" ||
+    node.type === "table"
+  ) {
     if (context.shouldPrintBlockSeparator) {
       yield "\n";
       context.shouldPrintBlockSeparator = false;
@@ -74,6 +78,11 @@ export function* render(
         yield context.theme.focused("]");
       }
       context.shouldPrintBlockSeparator = false;
+      break;
+    }
+    case "table": {
+      yield node.renderHeader(context, node.rawNode) + "\n";
+      context.shouldPrintBlockSeparator = true;
       break;
     }
   }

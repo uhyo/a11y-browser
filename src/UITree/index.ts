@@ -27,6 +27,7 @@ import {
   regionHeader,
   regionIndent,
   renderNothing,
+  tableHeader,
   textInline,
 } from "./nodeRenderers.js";
 import {
@@ -102,6 +103,7 @@ function convertNode(
     case "table": {
       return {
         type: "table",
+        renderHeader: tableHeader,
         rows: rawChildren.flatMap((child) => {
           if (child.type === "row") {
             return [child];
@@ -121,7 +123,8 @@ function convertNode(
         }),
       };
     }
-    case "cell": {
+    case "cell":
+    case "gridcell": {
       return {
         type: "cell",
         children: rawChildren.map(toNonIntermediateUINode),
@@ -185,7 +188,8 @@ function convertNode(
     case "generic":
     case "time":
     case "alert":
-    case "tooltip": {
+    case "tooltip":
+    case "LayoutTableCell": {
       if (children.every(isInlineNode)) {
         return {
           type: "inline",
@@ -209,7 +213,9 @@ function convertNode(
       };
     }
     case "Section":
-    case "HeaderAsNonLandmark": {
+    case "HeaderAsNonLandmark":
+    case "LayoutTable":
+    case "LayoutTableRow": {
       return {
         type: "wrapper",
         renderHeader: genericHeader,
@@ -277,7 +283,8 @@ function convertNode(
     case "banner":
     case "contentinfo":
     case "article":
-    case "search": {
+    case "search":
+    case "main": {
       return {
         type: "wrapper",
         renderHeader: regionHeader,

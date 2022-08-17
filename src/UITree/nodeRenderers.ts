@@ -181,6 +181,11 @@ export const listMarker: StandaloneRenderer = (context, rawNode) => {
   return context.theme.structure("- ");
 };
 
+export const tableHeader: StandaloneRenderer = (context, rawNode) => {
+  const name = getName(rawNode)?.trim();
+  return context.theme.structure(`Table${maybeUndefinedAnd(name, ": ")}`);
+};
+
 export const regionHeader: StandaloneRenderer = (context, rawNode) => {
   const role: string = rawNode?.role?.value ?? "";
   const header = role.charAt(0).toUpperCase() + role.slice(1);

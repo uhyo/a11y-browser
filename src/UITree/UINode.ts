@@ -51,6 +51,7 @@ export type ListItemUINode = UINodeBase & {
 
 export type TableUINode = UINodeBase & {
   type: "table";
+  renderHeader: StandaloneRenderer;
   rows: readonly RowUINode[];
 };
 
