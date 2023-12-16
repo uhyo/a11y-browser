@@ -2,7 +2,7 @@ import { on } from "events";
 import { AccessibilityTree } from "../../AccessibilityTree/index.js";
 
 export function getAXNodeUpdateStream(
-  tree: AccessibilityTree
+  tree: AccessibilityTree,
 ): [AsyncIterableIterator<void>, () => void] {
   const abortController = new AbortController();
   const cleanup = () => {

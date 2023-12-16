@@ -93,7 +93,7 @@ type IntermediateUINodeWithoutBase = IntermediateUINode extends infer U
 
 function convertNode(
   node: AccessibilityNode,
-  rawChildren: readonly IntermediateUINode[]
+  rawChildren: readonly IntermediateUINode[],
 ): IntermediateUINodeWithoutBase | undefined {
   const { rawNode, role } = node;
   if (rawNode.ignored) {
@@ -270,7 +270,7 @@ function convertNode(
     }
     case "listitem": {
       const hasListMarker = children.some(
-        (child) => child.rawNode?.role?.value === "ListMarker"
+        (child) => child.rawNode?.role?.value === "ListMarker",
       );
       return {
         type: "listitem",

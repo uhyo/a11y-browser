@@ -23,7 +23,7 @@ export function convertOneNode(node: AXNode): AccessibilityNode {
  */
 export function convert(
   nodes: Iterable<AXNode>,
-  nodeMap: Map<string, AccessibilityNode>
+  nodeMap: Map<string, AccessibilityNode>,
 ): void {
   // construct nodes
   const ns = [];

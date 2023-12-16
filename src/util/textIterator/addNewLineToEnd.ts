@@ -1,6 +1,6 @@
 export function* addNewLineToEnd(
   input: Iterable<string>,
-  when?: () => boolean
+  when?: () => boolean,
 ): IterableIterator<string> {
   let hadNewLineAtEnd = false;
   for (const line of input) {

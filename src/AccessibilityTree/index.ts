@@ -63,7 +63,7 @@ export class AccessibilityTree {
                 return;
               }
               const rootWebArea = task.nodes.find(
-                (node) => node.role?.value === "RootWebArea"
+                (node) => node.role?.value === "RootWebArea",
               );
               if (rootWebArea) {
                 this.#rootNode = this.#nodes.get(rootWebArea.nodeId);
@@ -124,7 +124,7 @@ export class AccessibilityTree {
     },
     {
       atBegin: false,
-    }
+    },
   );
 
   #documentUpdated(): void {
@@ -144,7 +144,7 @@ export class AccessibilityTree {
     for await (const event of mergeAsync(
       this.#cdp.on("Accessibility.loadComplete"),
       this.#cdp.on("Accessibility.nodesUpdated"),
-      this.#cdp.on("DOM.documentUpdated")
+      this.#cdp.on("DOM.documentUpdated"),
     )) {
       switch (event.event) {
         case "Accessibility.nodesUpdated": {
@@ -188,7 +188,7 @@ export class AccessibilityTree {
 
   public async reconstruct(
     newRoot: AXNode | undefined,
-    abortController: AbortController = new AbortController()
+    abortController: AbortController = new AbortController(),
   ): Promise<void> {
     globalLogger.debug("reconstruct");
     // await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -202,7 +202,7 @@ export class AccessibilityTree {
       }
 
       const nodes = await asyncIteratorToArray(
-        filterMapAsync(recurse(signal, this.#cdp, newRoot), (x) => x)
+        filterMapAsync(recurse(signal, this.#cdp, newRoot), (x) => x),
       );
       checkAbort(signal);
 

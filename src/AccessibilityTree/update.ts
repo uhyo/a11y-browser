@@ -16,7 +16,7 @@ export async function update(
   signal: AbortSignal,
   cdp: CDPObject,
   nodeMap: Map<string, AccessibilityNode>,
-  updates: readonly AXNode[]
+  updates: readonly AXNode[],
 ): Promise<void> {
   globalLogger.error("AXNodes", inspect(updates, { depth: 10 }));
   const affectedParentIds = new Set<string>();
@@ -54,10 +54,10 @@ export async function update(
       const gen = recurse(signal, cdp, node);
       await gen.next();
       return gen;
-    })
+    }),
   );
   const newNodes = await asyncIteratorToArray(
-    filterMapAsync(joinAsyncIterables(...gens), (x) => x)
+    filterMapAsync(joinAsyncIterables(...gens), (x) => x),
   );
   for (const node of newNodes) {
     const acc = convertOneNode(node);

@@ -12,7 +12,7 @@ export class Terminal {
 
   constructor(
     readonly output: NodeJS.WriteStream,
-    private readonly input: NodeJS.ReadStream
+    private readonly input: NodeJS.ReadStream,
   ) {
     this.#inputChunkParser = parseInputChunks();
     this.#inputChunkParser.next();
@@ -42,9 +42,9 @@ export class Terminal {
               .map((value) =>
                 0x20 < value && value < 0x7f
                   ? String.fromCharCode(value)
-                  : value.toString(16)
+                  : value.toString(16),
               )
-              .join(" ")
+              .join(" "),
           );
         } else {
           globalLogger.error("raw", chunk.value);
@@ -123,7 +123,7 @@ export class Terminal {
     this.#inputControls.unshift(inputControl);
     const cleanup = () => {
       this.#inputControls = this.#inputControls.filter(
-        (control) => control !== inputControl
+        (control) => control !== inputControl,
       );
     };
     return {

@@ -33,7 +33,7 @@ import { Terminal } from "./Terminal/index.js";
 
 export async function browserMain(
   page: Page,
-  tty: NodeJS.WriteStream
+  tty: NodeJS.WriteStream,
 ): Promise<void> {
   const [cdp, cleanupCdp] = await getCDPEventsStream(page);
   const acc = new AccessibilityTree(page, cdp);
@@ -73,21 +73,21 @@ export async function browserMain(
         ({
           type: "command",
           command,
-        } as const)
+        }) as const,
     ),
     mapAsync(
       rawResize,
       () =>
         ({
           type: "resize",
-        } as const)
+        }) as const,
     ),
     mapAsync(
       rawAXNodeUpdate,
       () =>
         ({
           type: "uiupdate",
-        } as const)
+        }) as const,
     ),
     mapAsync(
       rowBrowserEvent,
@@ -95,8 +95,8 @@ export async function browserMain(
         ({
           type: "browserevent",
           event,
-        } as const)
-    )
+        }) as const,
+    ),
   );
   let lastRenderingResult: RenderResult | undefined;
   try {
@@ -190,7 +190,7 @@ export async function browserMain(
           if (lastRenderingResult?.focusedNode?.renderedPosition) {
             scrollTo(
               lastRenderingResult.focusedNode.renderedPosition.start,
-              lastRenderingResult.focusedNode.renderedPosition.end
+              lastRenderingResult.focusedNode.renderedPosition.end,
             );
           }
           renderScreen(false);
@@ -278,7 +278,7 @@ export async function browserMain(
       const screen = eb.slice(state.scrollY, state.scrollY + rows - 1);
       renderBrowserInterface(
         screen.join("\n"),
-        lastRenderingResult?.focusedNode
+        lastRenderingResult?.focusedNode,
       );
       return;
     }
@@ -344,7 +344,7 @@ export async function browserMain(
   }
   function renderBrowserInterface(
     screenBuffer: string,
-    focusedNode: UINode | undefined
+    focusedNode: UINode | undefined,
   ) {
     setCursorPosition(tty, 0, 0);
     // clear to the bottom of the screen

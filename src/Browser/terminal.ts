@@ -21,19 +21,19 @@ export function makeCursorVisible(tty: NodeJS.WriteStream): void {
 export function setScrollRegion(
   tty: NodeJS.WriteStream,
   top: number,
-  bottom: number
+  bottom: number,
 ) {
   tty.write(
     (trm.changeScrollRegion ?? "")
       .replace("%i%p1%d", top.toString())
-      .replace("%p2%d", bottom.toString())
+      .replace("%p2%d", bottom.toString()),
   );
 }
 
 export function setCursorPosition(
   tty: NodeJS.WriteStream,
   row: number,
-  column: number
+  column: number,
 ) {
   tty.cursorTo(column, row);
 }

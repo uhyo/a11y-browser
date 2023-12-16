@@ -6,7 +6,7 @@ type CursorPositionQuery = {
 };
 
 export function registerCursorPositionQuery(
-  terminal: Terminal
+  terminal: Terminal,
 ): CursorPositionQuery {
   const { pull, cleanup } = terminal.registerHandler({
     filterMap(chunk) {

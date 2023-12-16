@@ -4,12 +4,12 @@ import { IsNever } from "../util/types/IsNerver.js";
 
 export type StandaloneRenderer = (
   context: RenderContext,
-  rawNode: AXNode | undefined
+  rawNode: AXNode | undefined,
 ) => string;
 export type ParentRenderer = (
   context: RenderContext,
   rawNode: AXNode | undefined,
-  child: IterableIterator<string>
+  child: IterableIterator<string>,
 ) => IterableIterator<string>;
 
 export type UINodeBase = {
@@ -75,7 +75,7 @@ export type UINode =
 export type IntermediateUINode = UINode | RowUINode | CellUINode;
 
 export function allTypesOfUINode<Arr extends readonly string[]>(
-  arr: [...Arr]
+  arr: [...Arr],
 ): IsNever<Exclude<UINode["type"], Arr[number]>> extends true
   ? IsNever<Exclude<Arr[number], UINode["type"]>> extends true
     ? Arr

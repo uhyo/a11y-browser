@@ -8,7 +8,7 @@ import { AXNode } from "./AccessibilityNode.js";
 export async function* recurse(
   signal: AbortSignal,
   cdp: CDPObject,
-  parent: AXNode
+  parent: AXNode,
 ): AsyncGenerator<AXNode | undefined, void, unknown> {
   // fetch children
   checkAbort(signal);
@@ -32,7 +32,7 @@ export async function* recurse(
         node,
         gen,
       };
-    })
+    }),
   );
   for (const { node, gen } of recs) {
     yield node;

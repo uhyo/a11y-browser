@@ -8,7 +8,7 @@ import { RenderContext } from "./RenderContext.js";
  */
 export function* render(
   node: UINode,
-  context: RenderContext
+  context: RenderContext,
 ): IterableIterator<string> {
   if (
     node.type === "wrapper" ||
@@ -50,7 +50,7 @@ export function* render(
       yield* node.render(
         context,
         node.rawNode,
-        renderInlineChildren(node.children, context)
+        renderInlineChildren(node.children, context),
       );
       context.shouldPrintBlockSeparator = true;
       break;
@@ -98,7 +98,7 @@ export function* render(
 
 function* renderInlineChildren(
   nodes: readonly UINode[],
-  context: RenderContext
+  context: RenderContext,
 ): IterableIterator<string> {
   let isFirst = true;
   for (const node of nodes) {
@@ -113,7 +113,7 @@ function* renderInlineChildren(
 
 function* renderBlockChildren(
   nodes: readonly UINode[],
-  context: RenderContext
+  context: RenderContext,
 ): IterableIterator<string> {
   for (const node of nodes) {
     for (const line of splitByLines(render(node, context))) {

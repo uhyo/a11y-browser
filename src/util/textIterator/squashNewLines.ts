@@ -1,5 +1,5 @@
 export function* squashNewLines(
-  input: Iterable<string>
+  input: Iterable<string>,
 ): IterableIterator<string> {
   for (const chunk of input) {
     let lfIndex = -1;

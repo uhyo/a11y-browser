@@ -15,7 +15,7 @@ type Command =
 
 export function mapInputToCommand(
   state: BrowserState,
-  input: AsyncIterable<InputChunk>
+  input: AsyncIterable<InputChunk>,
 ): AsyncIterable<Command> {
   return filterMapAsync(input, (chunk): Command | undefined => {
     switch (state.mode.type) {
@@ -39,7 +39,7 @@ export function mapInputToCommand(
                   const editable = getProperty(
                     state.focusedNode.rawNode,
                     "editable",
-                    ""
+                    "",
                   );
                   if (editable) {
                     return {
@@ -107,7 +107,7 @@ const endSequence = [0x1b, 0x5b, 0x46]; // ESC [ F
 
 export function escapeSequenceEquals(
   sequence: readonly number[],
-  expected: readonly number[]
+  expected: readonly number[],
 ): boolean {
   if (sequence.length !== expected.length) {
     return false;

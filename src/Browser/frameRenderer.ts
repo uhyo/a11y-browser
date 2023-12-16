@@ -15,11 +15,11 @@ import { splitByLines } from "../util/textIterator/splitByLines.js";
  */
 export function* frameRenderer(
   textSource: Iterable<string>,
-  width: number
+  width: number,
 ): Generator<string, void, undefined> {
   const indentSizeStack = new SummedStack();
   const indentStrings = new StackWithResult<string, string>((indents) =>
-    indents.join("")
+    indents.join(""),
   );
   for (const line of splitByLines(textSource)) {
     if (line.charAt(0) === indentMarkerStart) {
@@ -42,7 +42,7 @@ export function* frameRenderer(
           hard: true,
           wordWrap: false,
         }).split("\n"),
-        (line) => " " + indentStrings.result + line
+        (line) => " " + indentStrings.result + line,
       );
     } else {
       yield " " + indentStrings.result + line;

@@ -7,7 +7,7 @@ import { ParentRenderer, StandaloneRenderer } from "./UINode.js";
 export const genericInline: ParentRenderer = function* (
   context,
   rawNode,
-  child
+  child,
 ) {
   const name = getName(rawNode);
   if (name) {
@@ -22,7 +22,7 @@ export const genericInline: ParentRenderer = function* (
 export const genericBlock: ParentRenderer = function* (
   context,
   rawNode,
-  child
+  child,
 ) {
   const name = getName(rawNode);
   if (name) {
@@ -44,7 +44,7 @@ export const textInline: ParentRenderer = function* (context, rawNode) {
   if (context.pre) {
     // In pre-context, use `sources` to obtain text before newlines are removed.
     const textSource = rawNode?.name?.sources?.find(
-      (s) => s.type === "contents"
+      (s) => s.type === "contents",
     )?.value?.value;
     if (textSource) {
       yield textSource;
@@ -68,7 +68,7 @@ export const preBlock: ParentRenderer = function* (context, rawNode, child) {
 export const headingBlock: ParentRenderer = function* (
   context,
   rawNode,
-  child
+  child,
 ) {
   const level = Number(getProperty(rawNode, "level", 0));
   const headerMark = level <= 0 ? "#?" : "#".repeat(level);
@@ -81,7 +81,7 @@ export const headingHeader: StandaloneRenderer = (context, rawNode) => {
   const level = Number(getProperty(rawNode, "level", 0));
   const headerMark = level <= 0 ? "#?" : "#".repeat(level);
   return context.theme.heading(
-    headerMark + maybeUndefinedAnd(getName(rawNode), " ")
+    headerMark + maybeUndefinedAnd(getName(rawNode), " "),
   );
 };
 
@@ -130,7 +130,7 @@ export const codeIndent: StandaloneRenderer = (context) => {
 export const buttonInline: ParentRenderer = function* (
   context,
   rawNode,
-  child
+  child,
 ) {
   const name = getName(rawNode)?.trim();
   if (name) {
@@ -154,12 +154,12 @@ export const imageInline: ParentRenderer = function* (context, rawNode) {
 export const comboBoxInline: ParentRenderer = function* (
   context,
   rawNode,
-  child
+  child,
 ) {
   const name = getName(rawNode)?.trim();
   if (name) {
     yield context.theme.button(
-      `[Input(${name}${maybeUndefinedAnd(rawNode?.value?.value, ": ")})]`
+      `[Input(${name}${maybeUndefinedAnd(rawNode?.value?.value, ": ")})]`,
     );
   } else {
     yield context.theme.button("[Input: ");
@@ -190,7 +190,7 @@ export const regionHeader: StandaloneRenderer = (context, rawNode) => {
   const role: string = rawNode?.role?.value ?? "";
   const header = role.charAt(0).toUpperCase() + role.slice(1);
   return context.theme.structure(
-    header + maybeUndefinedAnd(getName(rawNode), " ")
+    header + maybeUndefinedAnd(getName(rawNode), " "),
   );
 };
 
@@ -205,7 +205,7 @@ export const renderNothing: StandaloneRenderer = () => {
 export function getProperty(
   node: AXNode | undefined,
   name: Protocol.Accessibility.AXPropertyName,
-  defaultValue: unknown
+  defaultValue: unknown,
 ): unknown {
   return (
     node?.properties?.find((p) => p.name === name)?.value.value ?? defaultValue
@@ -225,7 +225,7 @@ function getName(node: AXNode | undefined): string | undefined {
 function maybeUndefinedAnd(
   str: string | undefined | false,
   prefix = "",
-  suffix = ""
+  suffix = "",
 ): string {
   return !str ? "" : prefix + str + suffix;
 }

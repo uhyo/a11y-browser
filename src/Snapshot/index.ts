@@ -9,7 +9,7 @@ import { constructUITree } from "../UITree/index.js";
 
 export async function runSnapshot(
   page: Page,
-  outputStream: Writable
+  outputStream: Writable,
 ): Promise<void> {
   const [cdp] = await getCDPEventsStream(page);
   const acc = new AccessibilityTree(page, cdp);
@@ -28,7 +28,7 @@ export async function runSnapshot(
   };
   for (const line of frameRenderer(
     render(uit, context),
-    Number.POSITIVE_INFINITY
+    Number.POSITIVE_INFINITY,
   )) {
     outputStream.write(line + "\n");
   }

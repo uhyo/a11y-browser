@@ -3,7 +3,7 @@
  * Yielded values do not contain \n.
  */
 export function* splitByLines(
-  input: Iterable<string>
+  input: Iterable<string>,
 ): IterableIterator<string> {
   let chunk = "";
   for (const line of input) {

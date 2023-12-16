@@ -14,7 +14,7 @@ export type BrowserEvent =
     };
 
 export async function getBrowserEventStream(
-  page: Page
+  page: Page,
 ): Promise<[AsyncIterableIterator<BrowserEvent>, () => Promise<void>]> {
   const cdp = await page.target().createCDPSession();
   const abortController = new AbortController();
@@ -32,7 +32,7 @@ export async function getBrowserEventStream(
         // Maybe top-level frame
         emit({ type: "navigated", url: ev.frame.url });
       }
-    }
+    },
   );
   cdp.on(
     "Page.navigatedWithinDocument",
@@ -41,7 +41,7 @@ export async function getBrowserEventStream(
         type: "navigated",
         url: page.url(),
       });
-    }
+    },
   );
 
   const domContentLoadedHandler = () => {
@@ -62,7 +62,7 @@ export async function getBrowserEventStream(
       on(ev, evName, {
         signal: abortController.signal,
       }),
-      (ev) => ev[0]
+      (ev) => ev[0],
     ),
     cleanup,
   ];

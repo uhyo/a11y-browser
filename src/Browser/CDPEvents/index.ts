@@ -13,7 +13,7 @@ export type CDPEvent = keyof ProtocolMapping.Events extends infer Ev
   : never;
 
 type CDPOn = <T extends keyof ProtocolMapping.Events>(
-  event: T
+  event: T,
 ) => AsyncIterableIterator<Extract<CDPEvent, { event: T }>>;
 
 type CDPSend = <T extends keyof ProtocolMapping.Commands>(
@@ -37,7 +37,7 @@ const listenedEvents: (keyof ProtocolMapping.Events)[] = [
  * Listens to raw CDP events.
  */
 export async function getCDPEventsStream(
-  page: Page
+  page: Page,
 ): Promise<[cdp: CDPObject, cleanup: () => Promise<void>]> {
   const cdp = await page.target().createCDPSession();
   await cdp.send("Page.enable");
