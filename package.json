@@ -13,7 +13,7 @@
   "author": "uhyo <uhyo@uhy.ooo>",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^18.0.0",
+    "@types/node": "^20.10.4",
     "@types/throttle-debounce": "^5.0.0",
     "@types/wrap-ansi": "^8.0.1",
     "devtools-protocol": "^0.0.1019158",
@@ -25,9 +25,9 @@
     "chalk": "^5.0.1",
     "enquirer": "^2.3.6",
     "puppeteer": "^15.3.0",
-    "string-width": "^5.1.2",
+    "string-width": "^7.0.0",
     "terminfo": "^0.1.1",
     "throttle-debounce": "^5.0.0",
-    "wrap-ansi": "^8.0.1"
+    "wrap-ansi": "^9.0.0"
   }
 }
